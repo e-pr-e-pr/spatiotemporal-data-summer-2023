@@ -3,8 +3,12 @@ title: "Soil Water Content and Ecosystem Respiration analysis"
 format:
   html:
     code-fold: true
+jupyter: python3
+execute:
+  echo: true
+  eval: true
+  warning: false
 ---
-
 ## Introduction
 
 This is an analysis of Soil Water Content (SWC) and and Ecosystem Respiration (RECO) data.

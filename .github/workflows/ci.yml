@@ -26,21 +26,8 @@ jobs:
     - name: Build Docker image
       run: docker build -t your-project-image .
 
-    - name: Run Docker container
-      run: docker run your-project-image
-
-    - name: Set up Quarto
-      uses: quarto-dev/quarto-actions/setup@v2
-
-    - name: List Files
-      run: ls -R
-
-    - name: Print Quarto Version
-      run: quarto --version
-
-    - name: Render Quarto Document
-      run: |
-        quarto render report.qmd
+    - name: Run Quarto render in Docker container
+      run: docker run --rm -v ${{ github.workspace }}:/app your-project-image quarto render report.qmd
 
     - name: Upload rendered document
       uses: actions/upload-artifact@v2

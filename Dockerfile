@@ -16,8 +16,9 @@ RUN apt-get update && apt-get install -y \
 RUN wget https://github.com/quarto-dev/quarto-cli/releases/download/v1.3.450/quarto-1.3.450-linux-amd64.deb
 RUN dpkg -i quarto-1.3.450-linux-amd64.deb
 
-# Install any needed packages specified in requirements.txt
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir jupyter nbformat
 
 # The container will do nothing when started
 CMD ["tail", "-f", "/dev/null"]

@@ -1,0 +1,189 @@
+---
+title: "Soil Water Content and Ecosystem Respiration analysis"
+format:
+  html:
+    code-fold: true
+---
+
+## Introduction
+
+This is an analysis of Soil Water Content (SWC) and and Ecosystem Respiration (RECO) data.
+
+GIVE A BIT OF BACKGROUND ON THE DATASET IE LEVELS ETC;
+
+First, lets import the modules we will need to complete the analysis:
+
+```{python}
+import os
+
+# data access and manipulation modules
+import pandas as pd 
+import numpy as np
+import csv
+
+# plotting libraries
+import matplotlib.pyplot as plt
+import plotly.graph_objects as go # interactive plots
+import matplotlib.dates as mdates
+import datetime
+from datetime import datetime
+from matplotlib.backends.backend_pdf import PdfPages # saves multiple individual plots in 1 doc in case of not faceted plot
+from collections import defaultdict # for plotting layers of each station
+```
+
+Now, lets access the data we will be analysing.
+
+```{python}
+reco_data = './data/reco/'
+soil_water_data = './data/swc/'
+filtered_station_locations = './data/filtered-fluxnet-station-coords.csv'
+```
+
+I wrote this code to also work with the many other variables and indices available from FLUXNET, so I wrote a lot of functions that can be used for many of them (rather than having to write a fresh code chunk each time). This is what now follows. Explanations of the function follows before each code block. 
+
+The function below takes the datasets to be analysed, here SWC and RECO, and puts them into a more flexible form for te purposes of analysis and visualisation - a dictionary. The data directly from fluxnet is in the form of individual .txt files for each station. Here, I take these individual files and all their contents, and stitch them together into a dictionary, to be accessed by the station name as a key. 
+
+```{python}
+def process_data_files(directory):
+    data_dict = {}
+    for file in os.listdir(directory):
+        file_path = os.path.join(directory, file)
+        station_name = os.path.splitext(os.path.basename(file_path))[0].replace('_daily_avg', '')
+
+        time = []
+        data = []
+
+        with open(file_path, 'r') as datafile:
+            plotting = csv.reader(datafile, delimiter='\t')
+            next(plotting)  # skips header row
+            for ROWS in plotting:
+                time.append(datetime.strptime(ROWS[0], '%Y-%m-%d'))
+                data.append(float(ROWS[1]))
+
+        data_dict[station_name] = {'time': time, 'data': data}
+
+    return data_dict
+  ```
+
+For some variables, it is interesting to take the log of its value; this is what this function does, and it creates a new directionary with the same name + log i.e. log_reco_data_dict.
+ ```{python}
+  def log_transfo_data_dict(original_data_dict):
+    log_transformed_dict = {}
+
+    for station_name, data_info in original_data_dict.items():
+        log_transformed_data = np.log(data_info['data'])
+        log_transformed_dict[station_name] = {'time': data_info['time'], 'data': log_transformed_data}
+
+    return log_transformed_dict
+  ```
+
+  The function below takes whichever variables you want - again, here only SWC and RECO - and calculates various regression metrics of them, namely the r sqaured metric, the Pearson correlation coefficient, as well as the linear regression metrics (slope and intercept). 
+
+ ```{python}
+def calculate_regression_metrics(x, y):
+    x = np.array(x)
+    y = np.array(y)
+
+    # find indices where either x or y is NaN
+    nan_indices = np.isnan(x) | np.isnan(y)
+
+    # exclude NaN values from both x and y
+    x_valid = x[~nan_indices]
+    y_valid = y[~nan_indices]
+
+    if len(x_valid) == 0 or len(y_valid) == 0:
+        # if no valid data points are available, return NaN for all metrics
+        return np.nan, np.nan, np.nan, np.nan
+
+    correlation_coefficient = np.corrcoef(x_valid, y_valid)[0, 1]
+
+    # linear regression for slope and intercept
+    slope, intercept = np.polyfit(x_valid, y_valid, 1)
+
+    residuals = y_valid - (slope * x_valid + intercept)
+    ss_residual = np.sum(residuals**2)
+    ss_total = np.sum((y_valid - np.mean(y_valid))**2)
+    r_squared = 1 - (ss_residual / ss_total)
+
+    return correlation_coefficient, r_squared, slope, intercept
+
+```
+
+Once the metrics are calculated,  it is necessary to ave them stored somewhere - so here is a function to store them in a dictionary. It extracts the prefix of the station for the first data dictioanry, which indicates its name, and compares it with the prefix from the second data dictionary. If the names match and the data is not empty at that station, then it moves on to the next step - else it throws an error message to alert you of the emoty data. The next step is to ensure we are only calculating the metrics over common time steps,; the data is thus cropped to the later beginning and earlier end of the 2 datasets. The metrics are then stored with astring as the key and the value as the value, and the whole thing is stored in the dictionary that was intialised at the beginning of the function.
+
+```{python}
+def calculate_and_store_all_levels(dict1, dict2): 
+    all_levels_metrics = {} # initialise emoty dictionary
+
+    for key1, values1 in dict1.items():
+      # the next 3 lines are to get the station name prefix out of the first dictionary
+        split_parts = key1.split('_')
+        station_name = split_parts[0]
+        level_name = split_parts[2]
+        matching_keys = [key2 for key2 in dict2.keys() if key2.startswith(station_name)]
+
+        if matching_keys:
+            for key2, values2 in dict2.items():
+                if key2.startswith(station_name) and 'data' in values2:
+                    x = np.array(values1.get('data', []))
+                    y = np.array(values2.get('data', []))
+
+                    if not (np.iterable(x) and np.iterable(y)):
+                        print(f"Invalid data format for {key1} or {key2}")
+                        continue
+
+                    if len(x) == 0 or len(y) == 0:
+                        print(f"Empty data array for {key1} or {key2}")
+                        continue
+
+                    min_len = min(len(x), len(y))
+                    x = x[:min_len]
+                    y = y[:min_len]
+
+                    correlation_coefficient, r_squared, slope, intercept = calculate_regression_metrics(x, y)
+
+                    level_metrics = {
+                        'correlation_coefficient': correlation_coefficient,
+                        'r_squared': r_squared,
+                        'slope': slope,
+                        'intercept': intercept
+                    }
+
+                    station_and_level = f"{station_name}_{level_name}"
+
+                    if station_and_level not in all_levels_metrics:
+                        all_levels_metrics[station_and_level] = {}
+
+                    all_levels_metrics[station_and_level][station_name] = level_metrics
+
+    return all_levels_metrics
+```
+
+I want to keep all my functions in one place, so I wont yet laod the results of the metric calculation; it will be found below, after the function definitions. 
+
+If you want to save the results of all this work so far externally to a csv file, this is te function for you ! However, we wont do that here, since this is meant to be a standalone reproducible document. Here is the code chunk anyway: 
+
+```{python}
+
+echo: true
+eval: false
+def metrics_to_csv(metrics_dict, name1, name2):
+
+    path = '/path/to/where/you/want/to/save/the/csv/'
+    file_name = f"{name1}_{name2}_something_else.csv"
+    file_path = path+file_name
+    with open(file_path, 'w', newline='') as csv_file:
+        writer = csv.writer(csv_file)
+
+        header = ['Station', 'Correlation Coefficient', 'R-squared', 'Slope', 'Intercept']
+        writer.writerow(header)
+
+
+        for station in metrics_dict.keys():
+            inner_dict = metrics_dict[station][next(iter(metrics_dict[station]))]
+            row = [station, inner_dict['correlation_coefficient'], inner_dict['r_squared'], inner_dict['slope'], inner_dict['intercept']]
+            writer.writerow(row)
+
+    print(f'Successfully saved to {file_path}')
+```
+

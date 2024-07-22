@@ -1,0 +1,7 @@
+pandas
+numpy
+plotly
+quarto
+matplotlib
+datetime
+csv

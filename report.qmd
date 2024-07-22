@@ -9,7 +9,25 @@ execute:
   eval: true
   warning: false
 ---
-## Introduction
+
+```{python}
+echo: False
+
+from data_processing import process_data_files, log_transfo_data_dict
+import os
+
+# define  data paths
+reco_data = './data/reco/'
+soil_water_data = './data/swc/'
+filtered_station_locations = './data/filtered-fluxnet-station-coords.csv'
+
+# Now use the imported functions
+reco_data_dict = process_data_files(reco_data)
+log_reco_data_dict = log_transfo_data_dict(reco_data_dict)
+swc_data_dict = process_data_files(soil_water_data)
+
+print("Data processing completed successfully")
+```
 
 This is an analysis of Soil Water Content (SWC) and and Ecosystem Respiration (RECO) data.
 
@@ -18,8 +36,6 @@ GIVE A BIT OF BACKGROUND ON THE DATASET IE LEVELS ETC; JUSTIFY WHY ONLY 4 LEVELS
 First, lets import the modules we will need to complete the analysis:
 
 ```{python}
-import os
-
 # data access and manipulation modules
 import pandas as pd 
 import numpy as np

@@ -29,7 +29,7 @@ reco_data_dict = process_data_files(reco_data)
 log_reco_data_dict = log_transfo_data_dict(reco_data_dict)
 swc_data_dict = process_data_files(soil_water_data)
 
-print("Data processing completed successfully")
+# print("Data processing completed successfully")
 ```
 
 

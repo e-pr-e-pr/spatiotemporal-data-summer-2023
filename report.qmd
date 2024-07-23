@@ -686,10 +686,12 @@ I now visualise the results of the metric calculations. The visual representatio
 
 ```{python}
 # prep data for plotting
+fluxnet_locations = pd.read_csv(filtered_station_locations) # csv to dataframe for easier processing
+
 plot_data = []
 for station, levels in swc_reco_four_levels_metrics.items():
     station_name = station.split('_')[0]
-    station_info = filtered_station_locations[filtered_station_locations['station'] == station_name]
+    station_info = fluxnet_locations[fluxnet_locations['station'] == station_name]
     
     if station_info.empty: # if loop to avoid some errors
         print(f"Warning: No location data for station {station_name}")

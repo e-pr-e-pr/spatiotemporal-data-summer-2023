@@ -1,15 +1,18 @@
 ---
-title: "Soil Water Content and Ecosystem Respiration analysis"
+title: "Soil Water Content and Ecosystem Respiration Analysis"
+author: |
+  **Eleanor Percy-Rouhaud**  
+  Matriculation Number: 3749872
 format:
   html:
     code-fold: true
+    css: custom.css
 jupyter: python3
 execute:
   echo: true
   eval: true
   warning: false
 ---
-
 ```{python}
 echo: False
 
@@ -302,7 +305,7 @@ def remove_missing_time_steps(dict1):
                 timestep = time_data[current_level][i]
 
                 if timestep not in time_data[reference_level]:
-                    print(f'Removing timestep {timestep} from {current_level}')
+                   # print(f'Removing timestep {timestep} from {current_level}') # just for debugging and interest. Prints a lot! 
 
                     # Remove corresponding 'data' value
                     del dict1[current_level]['data'][i]

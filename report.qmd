@@ -16,7 +16,7 @@ execute:
 ```{python}
 echo: False
 
-from data_processing_functions import process_data_files, log_transfo_data_dict, metrics_to_csv, filter_level_data_common_time, calculate_regression_metrics, calculate_and_store_all_levels, remove_missing_time_steps, box_plot_metrics_over_levels, four_levels_filter, box_plot_metrics_over_levels
+from data_processing_functions import process_data_files, log_transfo_data_dict, metrics_to_csv, filter_level_data_common_time, calculate_regression_metrics, calculate_and_store_all_levels, remove_missing_time_steps, four_levels_filter,
 import os
 
 # define  data paths
@@ -894,7 +894,7 @@ for prefix, grouped_data in grouped_stations.items():
 TALK A BIT ABOUT THE TEMP EVOL PLOTS
 mention the lines in it
 
-These plots are very messy, and a lot of them feature sections with very flat lines. These are simply points where, for a period of time, data at that level was not recorded for whatever reason. Even though this raw data is quite messy, we can still see 2 interesting things - the beaviour of SWC at different depths, and, in many cases, a strong seasonality. So then decided to look at the seasonal trends. Again, I wasnt able to create the plots in the way I wanted to for this (it would have been many many pages long), so I have included here 2 example plots. I chose the stations FR-Hes, and ANOTHER, since the have a long time series, and so are the most optimal for demonstrating seasonal variation with this dataset. 
+These plots are very messy, and a lot of them feature sections with very flat lines. These are simply points where, for a period of time, data at that level was not recorded for whatever reason. Even though this raw data is quite messy, we can still see 2 interesting things - the beaviour of SWC at different depths, and, in many cases, a strong seasonality. So then decided to look at the seasonal trends. Again, I wasnt able to create the plots in the way I wanted to for this (it would have been many many pages long), so I have included here 2 example plots. I chose the stations FR-Hes, and ANOTHER, since the have a long time series, and so are the most optimal for demonstrating seasonal variation with this dataset. However, it is not so bad, since they are 'just' visualisations, and the meaningful numbers can b
 
 
 

@@ -403,7 +403,7 @@ If you wanted to save these boxplots as a pdf, use this function:
 # just copy and paste! simply remember to change the name in the file path, and the variables specificied in the figure:
 
 echo: True
-eval: False
+#| eval: false
 
 metrics_to_plot = ['correlation_coefficient', 'r_squared', 'slope', 'intercept'] # to automate function call
 
@@ -419,7 +419,7 @@ And if you wanted to save these metrics as a csv file, use this code chunk:
 
 ```{python}
 echo: True
-eval: False
+#| eval: false
 
 metrics_to_csv(swc_reco_four_levels_metrics, 'SWC', 'RECO')
 metrics_to_csv(swc_four_levels_logreco_metrics, 'SWC', 'logRECO')

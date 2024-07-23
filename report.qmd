@@ -31,6 +31,13 @@ swc_data_dict = process_data_files(soil_water_data)
 
 print("Data processing completed successfully")
 ```
+<div class="title">
+    <h1>Soil Water Content and Ecosystem Respiration Analysis</h1>
+    <p class="author"><strong>Your Name</strong></p>
+    <p class="matriculation-number">Matriculation Number: 123456789</p>
+</div>
+
+## Introduction 
 
 This is an analysis of Soil Water Content (SWC) and and Ecosystem Respiration (RECO) data.
 

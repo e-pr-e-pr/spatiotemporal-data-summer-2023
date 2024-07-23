@@ -798,8 +798,55 @@ for station in stations:
 ```
 
 And the same thing for RECO:
-
+ADD FUNCTION DESCRIPTION
 ```{python}
+def create_combined_interactive_plot(df, stations, featured_stations):
+
+    combined_fig = make_subplots(rows=1, cols=1)
+    
+    for station in stations:
+        station_data = df[df['station'] == station]
+        for level in station_data['level'].unique():
+            level_data = station_data[station_data['level'] == level]
+            combined_fig.add_trace(
+                go.Scatter(
+                    x=level_data['time'], 
+                    y=level_data['data'], 
+                    mode='lines', 
+                    name=f'{station} - {level}', 
+                    visible=(station in featured_stations)  # Only visible if it's a featured station
+                )
+            )
+
+    # Update layout with dropdown menu
+    combined_fig.update_layout(
+        updatemenus=[
+            dict(
+                active=0,
+                buttons=[
+                    dict(label='Featured Stations',
+                         method='update',
+                         args=[{'visible': [station in featured_stations for station in stations for _ in df[df['station'] == station]['level'].unique()]}]),
+                    *[dict(label=station,
+                           method='update',
+                           args=[{'visible': [s == station for s in stations for _ in df[df['station'] == s]['level'].unique()]}])
+                      for station in stations]
+                ],
+                x=1.15,
+                y=1.15,
+                xanchor="right",
+                yanchor="top"
+            )
+        ],
+        title="Soil Water Content - Interactive Plot",
+        xaxis_title="Time",
+        yaxis_title="Soil Water Content",
+        showlegend=True
+    )
+
+    return combined_fig
+
+
 df_list = []
 for key, value in reco_swc_filtered.items():
     station = key.split('_')[0]
@@ -811,20 +858,18 @@ for key, value in reco_swc_filtered.items():
 
 df = pd.concat(df_list, ignore_index=True)
 
-# Convert 'time' to datetime if it's not already
 df['time'] = pd.to_datetime(df['time'])
 
-# Add year and month columns
 df['year'] = df['time'].dt.year
 df['month'] = df['time'].dt.month
 
-# Get unique station names
 stations = df['station'].unique()
 
-# Create a plot for each station
-for station in stations:
-    fig = create_seasonal_plot(df, station)
-    fig.show()
+featured_stations = ['DE-HoH', 'GF-Guy']  # change at will
+
+# Create the interactive plot
+fig = create_combined_interactive_plot(df, stations, featured_stations)
+fig.show()
 
 ```
 

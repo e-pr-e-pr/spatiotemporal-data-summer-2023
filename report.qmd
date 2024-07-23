@@ -423,10 +423,33 @@ ADD BOX PLOT PLOTS IN HERE
 If you wanted to save these boxplots as a pdf, use this function: 
 
 
+```{python}
 
+#| eval: false
+#| echo: true
+
+# just copy and paste! simply remember to change the name in the file path, and the variables specificied in the figure:
+
+
+metrics_to_plot = ['correlation_coefficient', 'r_squared', 'slope', 'intercept'] # to automate function call
+
+with PdfPages('C:/Users/violi/Documents/ESDSRS/STD/soil-moisture-ghc/results-test/4_levels_same_timesteps_swc_reco_box_plots.pdf') as pdf_pages:
+    for metric in metrics_to_plot:
+        fig = box_plot_metrics_over_levels(swc_reco_four_levels_metrics, metric, 'SWC', 'RECO')
+        pdf_pages.savefig(fig, bbox_inches='tight')
+        plt.close(fig)
+
+```
 
 And if you wanted to save these metrics as a csv file, use this code chunk:
 
+```{python}
+#| eval: false
+#| echo: true
+
+metrics_to_csv(swc_reco_four_levels_metrics, 'SWC', 'RECO')
+metrics_to_csv(swc_four_levels_logreco_metrics, 'SWC', 'logRECO')
+```
 
 So far, so cool! But its lacking a bit of explicit spatio temporal energy. So, lets firstly plot the stations on a world map so we can see where we are looking at. 
 

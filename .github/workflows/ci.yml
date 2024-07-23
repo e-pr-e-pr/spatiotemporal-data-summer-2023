@@ -29,7 +29,9 @@ jobs:
 
     - name: Run Quarto render in Docker container
       run: |
-        docker run --rm -v ${{ github.workspace }}:/app your-project-image \
+        docker run --rm -v ${{ github.workspace }}:/app \
+        -e QUARTO_DENO_EXTRA_OPTIONS="--v8-flags=--stack-size=8176" \
+        your-project-image \
         bash -c "pip install -r requirements.txt && quarto render report.qmd"
 
     - name: Upload rendered document

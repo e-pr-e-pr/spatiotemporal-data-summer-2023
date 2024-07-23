@@ -24,18 +24,14 @@ reco_data = './data/reco/'
 soil_water_data = './data/swc/'
 filtered_station_locations = './data/filtered-fluxnet-station-coords.csv'
 
-# Now use the imported functions
+# imported functions ready to use
 reco_data_dict = process_data_files(reco_data)
 log_reco_data_dict = log_transfo_data_dict(reco_data_dict)
 swc_data_dict = process_data_files(soil_water_data)
 
 print("Data processing completed successfully")
 ```
-<div class="title">
-    <h1>Soil Water Content and Ecosystem Respiration Analysis</h1>
-    <p class="author"><strong>Your Name</strong></p>
-    <p class="matriculation-number">Matriculation Number: 123456789</p>
-</div>
+
 
 ## Introduction 
 

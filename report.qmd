@@ -185,8 +185,8 @@ If you want to save the results of all this work so far externally to a csv file
 
 ```{python}
 
-echo: True
-eval: False
+#| eval: false
+#| echo: true
 def metrics_to_csv(metrics_dict, name1, name2):
 
     path = '/path/to/where/you/want/to/save/the/csv/'
@@ -400,10 +400,12 @@ If you wanted to save these boxplots as a pdf, use this function:
 
 
 ```{python}
+
+#| eval: false
+#| echo: true
+
 # just copy and paste! simply remember to change the name in the file path, and the variables specificied in the figure:
 
-echo: True
-#| eval: false
 
 metrics_to_plot = ['correlation_coefficient', 'r_squared', 'slope', 'intercept'] # to automate function call
 
@@ -418,8 +420,8 @@ with PdfPages('C:/Users/violi/Documents/ESDSRS/STD/soil-moisture-ghc/results-tes
 And if you wanted to save these metrics as a csv file, use this code chunk:
 
 ```{python}
-echo: True
 #| eval: false
+#| echo: true
 
 metrics_to_csv(swc_reco_four_levels_metrics, 'SWC', 'RECO')
 metrics_to_csv(swc_four_levels_logreco_metrics, 'SWC', 'logRECO')
@@ -432,8 +434,8 @@ This is how I filtered the full station coordinate data set for only the ones th
 
 ```{python}
 
-echo: True
-eval: False
+#| eval: false
+#| echo: true
 df_coords = pd.read_csv(station_location_csv)
 station_names_from_dict = {key.split('_')[0] for key in swc_data_dict.keys()}
 df_filtered = df_coords[df_coords['station'].isin(station_names_from_dict)]

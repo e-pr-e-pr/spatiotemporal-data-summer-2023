@@ -210,7 +210,7 @@ As briefly mentioned above, the levels feature of the FLUXNET data is very inter
 
 ```{python}
 def remove_missing_time_steps(dict1):
-    for station_name, levels_data in gst_filtered.items():
+    for station_name, levels_data in dict1.items():
         station_prefix = station_name.split('_')[0]
 
         level_keys = [key for key in dict1 if key.startswith(station_prefix)]

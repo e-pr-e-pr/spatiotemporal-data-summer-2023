@@ -13,7 +13,7 @@ execute:
 ```{python}
 echo: False
 
-from data_processing_functions import process_data_files, log_transfo_data_dict
+from data_processing_functions import process_data_files, log_transfo_data_dict, metrics_to_csv, filter_level_data_common_time, calculate_regression_metrics, calculate_and_store_all_levels, remove_missing_time_steps, box_plot_metrics_over_levels, four_levels_filter, box_plot_metrics_over_levels
 import os
 
 # define  data paths

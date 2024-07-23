@@ -189,7 +189,7 @@ def remove_missing_time_steps(gst_filtered):
                 timestep = time_data[current_level][i]
 
                 if timestep not in time_data[reference_level]:
-                    print(f'Removing timestep {timestep} from {current_level}')
+                   # print(f'Removing timestep {timestep} from {current_level}')
 
                     # Remove corresponding 'data' value
                     del gst_filtered[current_level]['data'][i]

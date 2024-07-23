@@ -39,6 +39,8 @@ This is an analysis of Soil Water Content (SWC) and and Ecosystem Respiration (R
 
 GIVE A BIT OF BACKGROUND ON THE DATASET IE LEVELS ETC; JUSTIFY WHY ONLY 4 LEVELS
 
+## Setting up the functions to run the analysis
+
 First, lets import the modules we will need to complete the analysis:
 
 ```{python}
@@ -112,7 +114,8 @@ For some variables, it is interesting to take the log of its value; this is what
   The function below takes whichever variables you want - again, here only SWC and RECO - and calculates various regression metrics of them, namely the r sqaured metric, the Pearson correlation coefficient, as well as the linear regression metrics (slope and intercept). 
 
  ```{python}
- #| eval: false
+
+#| eval: false
 #| echo: true
 
 def calculate_regression_metrics(x, y):
@@ -492,6 +495,8 @@ def create_seasonal_plot(df, station):
 
 ```
 
+## Generating the results
+
 So, that was a lot, but those functions make up most of the code! Now we can move on to some analysis. Lets use the 'process_data_files' function to stitch together our datasets, and also make a lof version of the RECO data set too, since that could be interesting:
 
 ```{python}
@@ -643,30 +648,29 @@ fig.show()
 
 This map shows the locations ADD TO THIS . This is done for visualisation purposes. 
 
-We can now look at te temporal evolution of SWC and RECO at the different stations. This function filters for the stations with only 4 levels present, and plots them - with eac plot featuring the 4 levels. 
+We can now look at te temporal evolution of SWC and RECO at the different stations. This function filters for the stations with only 4 levels present, and plots them - with each plot featuring the 4 levels. 
 
 ```{python}
 
 # Function to plot time series plots of the datasets
 def plot_grouped_stations(prefix, grouped_data):
-    plt.figure(figsize=(12, 6))
+    fig, ax = plt.subplots(figsize=(12, 6))
     
     for station_key, station_data in grouped_data.items():
         times = station_data['time']
         
-        # Plot each data (i.e., swc) measurement for this station
         for key, values in station_data.items():
             if key != 'time':
-                plt.plot(times, values, label=f'{station_key} - {key}')
+                ax.plot(times, values, label=f'{station_key} - {key}')
     
-    plt.title(f'Soil Water Content - Station {prefix}')
-    plt.xlabel('Time')
-    plt.ylabel('Soil Water Content')
-    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-    plt.grid(True)
-    plt.tight_layout()
+    ax.set_title(f'Soil Water Content - Station {prefix}')
+    ax.set_xlabel('Time')
+    ax.set_ylabel('Soil Water Content')
+    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    ax.grid(True)
+    fig.tight_layout()
     
-    plt.show()
+    return fig  
 
 # make csv file into data frame for easy access
 fluxnet_locations = pd.read_csv(filtered_station_locations)
@@ -681,9 +685,8 @@ for station_key, station_data in swc_data_dict.items():
 
 # Plot for each station, all the layers
 for prefix, grouped_data in grouped_stations.items():
-    plot_grouped_stations(prefix, grouped_data)
-
-print("All plots have been shown.")
+    fig = plot_grouped_stations(prefix, grouped_data)
+    plt.show()
 ```
 
 TALK A BIT ABOUT THE TEMP EVOL PLOTS
@@ -825,4 +828,12 @@ for station in stations:
 
 ```
 
-Very interesting to look at the tropical region (GF-Guy) vs te northern europe ones - very different behaviour! more micrometeorological data needed from stations with different climate classifications to really see the effect
+
+
+
+## Outlook 
+
+It would be great to find the locations of the statiosn that FLUXNET does not provide coordinate data for, such that there is more geographic data avilable to analyse. 
+
+A next step for this project would be incorporating climatological data into the analysis - specifically precipitation and temperature - to better understand the relationship between SWC and RECO. Additionally, land cover classification for the stations could also be interesting to incorporate. 
+

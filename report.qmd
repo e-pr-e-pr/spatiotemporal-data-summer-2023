@@ -662,10 +662,10 @@ def plot_grouped_stations(prefix, grouped_data):
     
     plt.show()
 
-# Read the prefixes from the CSV file
-valid_prefixes = set(filtered_station_locations['prefix'])  # Assuming the column name is 'prefix'
+# read the sttaion names from the CSV file
+valid_prefixes = set(filtered_station_locations['station'])  
 
-# Group stations by prefix
+# group stations by prefix
 grouped_stations = defaultdict(dict)
 for station_key, station_data in swc_data_dict.items():
     prefix = station_key.split('_')[0]  # Extract prefix (e.g., 'AR-SLu')
@@ -784,3 +784,36 @@ for station in stations:
     fig = create_seasonal_plot(df, station)
     fig.show()
 ```
+
+And the same thing for RECO:
+
+```{python}
+df_list = []
+for key, value in reco_swc_filtered.items():
+    station = key.split('_')[0]
+    level = key.split('_')[1]
+    df = pd.DataFrame(value)
+    df['station'] = station
+    df['level'] = level
+    df_list.append(df)
+
+df = pd.concat(df_list, ignore_index=True)
+
+# Convert 'time' to datetime if it's not already
+df['time'] = pd.to_datetime(df['time'])
+
+# Add year and month columns
+df['year'] = df['time'].dt.year
+df['month'] = df['time'].dt.month
+
+# Get unique station names
+stations = df['station'].unique()
+
+# Create a plot for each station
+for station in stations:
+    fig = create_seasonal_plot(df, station)
+    fig.show()
+
+```
+
+Very interesting to look at the tropical region (GF-Guy) vs te northern europe ones - very different behaviour! more micrometeorological data needed from stations with different climate classifications to really see the effect

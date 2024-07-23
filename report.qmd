@@ -54,8 +54,6 @@ import csv
 # plotting libraries
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go # interactive plots
-from plotly.subplots import make_subplots # for dropdown menu
-from IPython.display import display, HTML # to elp the matplotlib plots render properly
 import matplotlib.dates as mdates
 import datetime
 from datetime import datetime
@@ -458,6 +456,9 @@ def box_plot_metrics_over_levels(metric_dict, metric_name, xlabel, ylabel):
 The following function creates an interactive plot of the seasonal variation of the data. The specific metrics plotted here are the mean, and the standard deviation. 
 
 ```{python}
+#| eval: false
+#| echo: false
+
 # Function to create a seasonal plot for a station
 def create_seasonal_plot(df, station):
     # Group by month and calculate mean and standard deviation
@@ -496,6 +497,59 @@ def create_seasonal_plot(df, station):
     )
     
     return fig
+
+```
+
+
+```{python}
+
+# Function to create a seasonal plot for a station
+def create_seasonal_plot(df, station):
+    fig = go.Figure()
+    
+    station_data = df[df['station'] == station]
+    
+    for level in station_data['level'].unique():
+        level_data = station_data[station_data['level'] == level]
+        
+        # Group by month and calculate mean and standard deviation
+        monthly_data = level_data.groupby('month')['data'].agg(['mean', 'std']).reset_index()
+        
+        # Add mean line
+        fig.add_trace(go.Scatter(
+            x=monthly_data['month'],
+            y=monthly_data['mean'],
+            mode='lines',
+            name=f'{station} - {level} Mean',
+            line=dict(width=2)
+        ))
+        
+        # Add shaded area for standard deviation
+        fig.add_trace(go.Scatter(
+            x=np.concatenate([monthly_data['month'], monthly_data['month'][::-1]]),
+            y=np.concatenate([monthly_data['mean'] + monthly_data['std'], 
+                              (monthly_data['mean'] - monthly_data['std'])[::-1]]),
+            fill='toself',
+            fillcolor='rgba(0,100,80,0.2)',
+            line=dict(color='rgba(255,255,255,0)'),
+            hoverinfo="skip",
+            showlegend=False
+        ))
+    
+    fig.update_layout(
+        title=f'Seasonal Variation of SWC - Station {station}',
+        xaxis_title='Month',
+        yaxis_title='SWC (%)',
+        xaxis=dict(tickmode='array', tickvals=list(range(1, 13)), ticktext=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']),
+        legend_title='',
+        hovermode="x"
+    )
+    
+    return fig
+
+
+
+
 
 ```
 
@@ -685,29 +739,6 @@ def plot_grouped_stations(prefix, grouped_data):
 ```
 
 
-```{python}
-
-
-
-# make csv file into data frame for easy access
-fluxnet_locations = pd.read_csv(filtered_station_locations)
-valid_prefixes = set(fluxnet_locations['station'])  
-
-# group stations by prefix
-grouped_stations = defaultdict(dict)
-for station_key, station_data in swc_data_dict.items():
-    prefix = station_key.split('_')[0]  # Extract prefix (e.g., 'AR-SLu')
-    if prefix in valid_prefixes:  # Only include stations with valid prefixes
-        grouped_stations[prefix][station_key] = station_data
-
-# Plot for each station, all the layers
-for prefix, grouped_data in grouped_stations.items():
-    fig = plot_grouped_stations(prefix, grouped_data)
-    fig.show()
-
-```
-
-TALK A BIT ABOUT THE TEMP EVOL PLOTS
 
 I now visualise the results of the metric calculations. The visual representation on a map creates an instructive first look at the potential patterns in the data: 
 
@@ -781,8 +812,37 @@ intercept_map.show()
 
 TALK A LITTLE ABOUT EACH OF THESE RESULTS
 
+TEMPORAL EVOLUTION
 
 ```{python}
+# make csv file into data frame for easy access
+fluxnet_locations = pd.read_csv(filtered_station_locations)
+valid_prefixes = set(fluxnet_locations['station'])  
+
+# group stations by prefix
+grouped_stations = defaultdict(dict)
+for station_key, station_data in swc_data_dict.items():
+    prefix = station_key.split('_')[0]  # Extract prefix (e.g., 'AR-SLu')
+    if prefix in valid_prefixes:  # Only include stations with valid prefixes
+        grouped_stations[prefix][station_key] = station_data
+
+# Plot for each station, all the layers
+for prefix, grouped_data in grouped_stations.items():
+    fig = plot_grouped_stations(prefix, grouped_data)
+    fig.show()
+
+```
+
+TALK A BIT ABOUT THE TEMP EVOL PLOTS
+mention the lines in it
+
+These plots are very messy, and a lot of them feature sections with very flat lines. These are simply points where, for a period of time, data at that level was not recorded for whatever reason. Even though this raw data is quite messy, we can still see 2 interesting things - the beaviour of SWC at different depths, and, in many cases, a strong seasonality. So then decided to look at the seasonal trends:
+
+
+
+```{python}
+#| eval: false
+#| echo: false
 # plotting the mean seasonal variation of each station, as well as the standard deviation, first for SWC
 
 # Assuming swc_filtered is your dictionary with the data
@@ -815,132 +875,68 @@ for station in stations:
     fig.show()
 ```
 
+```{python}
+# Convert the dictionary to a DataFrame
+df_list = []
+for key, value in swc_filtered.items():
+    station = key.split('_')[0]
+    level = key.split('_')[1]
+    df = pd.DataFrame(value)
+    df['station'] = station
+    df['level'] = level
+    df_list.append(df)
+
+df = pd.concat(df_list, ignore_index=True)
+
+# Convert 'time' to datetime if it's not already
+df['time'] = pd.to_datetime(df['time'])
+
+# Add year and month columns
+df['year'] = df['time'].dt.year
+df['month'] = df['time'].dt.month
+
+# Get unique station names
+stations = df['station'].unique()
+
+# Create a plot for each station
+for station in stations:
+    fig = create_seasonal_plot(df, station)
+    fig.show()
+```
+
 And the same thing for RECO:
 ADD FUNCTION DESCRIPTION
 ```{python}
-def create_combined_interactive_plot(df, stations, featured_stations):
-    # Create separate subplots for each featured station
-    fig = make_subplots(rows=len(featured_stations), cols=1, 
-                        subplot_titles=[f"Seasonal Soil Water Content - {station}" for station in featured_stations])
-    
-    # Add traces for featured stations
-    for i, featured_station in enumerate(featured_stations, start=1):
-        station_data = df[df['station'] == featured_station]
-        
-        for level in station_data['level'].unique():
-            level_data = station_data[station_data['level'] == level]
-            
-            # Group by month and calculate mean and std
-            monthly_data = level_data.groupby(level_data['time'].dt.month).agg({'data': ['mean', 'std']})
-            monthly_data.columns = ['mean', 'std']
-            monthly_data = monthly_data.reset_index()
-            
-            # Add trace for mean
-            fig.add_trace(
-                go.Scatter(
-                    x=monthly_data['time'],
-                    y=monthly_data['mean'],
-                    mode='lines',
-                    name=f'{featured_station} - {level}',
-                    legendgroup=featured_station,
-                    showlegend=(i == 1)
-                ),
-                row=i, col=1
-            )
-            
-            # Add trace for standard deviation
-            fig.add_trace(
-                go.Scatter(
-                    x=monthly_data['time'].tolist() + monthly_data['time'].tolist()[::-1],
-                    y=(monthly_data['mean'] + monthly_data['std']).tolist() + 
-                       (monthly_data['mean'] - monthly_data['std']).tolist()[::-1],
-                    fill='toself',
-                    fillcolor='rgba(0,100,80,0.2)',
-                    line=dict(color='rgba(255,255,255,0)'),
-                    showlegend=False,
-                    name=f'{featured_station} - {level} Std Dev'
-                ),
-                row=i, col=1
-            )
-    
-    # Create dropdown options for non-featured stations
-    dropdown_options = [{'label': 'Featured Stations', 'method': 'update', 'args': [{'visible': [True] * len(fig.data)}]}]
-    
-    for station in stations:
-        if station not in featured_stations:
-            station_data = df[df['station'] == station]
-            traces = []
-            for level in station_data['level'].unique():
-                level_data = station_data[station_data['level'] == level]
-                
-                # Group by month and calculate mean and std
-                monthly_data = level_data.groupby(level_data['time'].dt.month).agg({'data': ['mean', 'std']})
-                monthly_data.columns = ['mean', 'std']
-                monthly_data = monthly_data.reset_index()
-                
-                # Add trace for mean
-                traces.append(
-                    go.Scatter(
-                        x=monthly_data['time'],
-                        y=monthly_data['mean'],
-                        mode='lines',
-                        name=f'{station} - {level}',
-                        visible=False
-                    )
-                )
-                
-                # Add trace for standard deviation
-                traces.append(
-                    go.Scatter(
-                        x=monthly_data['time'].tolist() + monthly_data['time'].tolist()[::-1],
-                        y=(monthly_data['mean'] + monthly_data['std']).tolist() + 
-                           (monthly_data['mean'] - monthly_data['std']).tolist()[::-1],
-                        fill='toself',
-                        fillcolor='rgba(0,100,80,0.2)',
-                        line=dict(color='rgba(255,255,255,0)'),
-                        showlegend=False,
-                        name=f'{station} - {level} Std Dev',
-                        visible=False
-                    )
-                )
-            fig.add_traces(traces)
-            
-            # Add dropdown option for this station
-            visibility = [False] * len(fig.data)
-            for i in range(len(traces)):
-                visibility[-(i+1)] = True
-            dropdown_options.append({'label': station, 'method': 'update', 'args': [{'visible': visibility}]})
+# plotting the mean seasonal variation of each station, as well as the standard deviation, first for SWC
 
-    # Update layout
-    fig.update_layout(
-        height=300 * len(featured_stations),
-        updatemenus=[{
-            'buttons': dropdown_options,
-            'direction': 'down',
-            'showactive': True,
-            'x': 1.0,
-            'y': 1.1,
-            'xanchor': 'right',
-            'yanchor': 'top'
-        }],
-        xaxis_title="Month",
-        yaxis_title="Soil Water Content",
-        showlegend=True
-    )
+# Assuming swc_filtered is your dictionary with the data
+# First, let's convert the dictionary to a DataFrame
+df_list = []
+for key, value in reco_swc_filtered.items():
+    station = key.split('_')[0]
+    level = key.split('_')[1]
+    df = pd.DataFrame(value)
+    df['station'] = station
+    df['level'] = level
+    df_list.append(df)
 
-    # Update x-axis to show month names
-    for i in range(1, len(featured_stations) + 1):
-        fig.update_xaxes(tickvals=list(range(1, 13)), 
-                         ticktext=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                                   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-                         row=i, col=1)
+df = pd.concat(df_list, ignore_index=True)
 
-    return fig
+# Convert 'time' to datetime if it's not already
+df['time'] = pd.to_datetime(df['time'])
 
-# Usage remains the same
-featured_stations = ['DE-HoH', 'GF-Guy']  # change at will
-fig = create_combined_interactive_plot(df, stations, featured_stations)
-fig.show()
+# Add year and month columns
+df['year'] = df['time'].dt.year
+df['month'] = df['time'].dt.month
+
+
+# Get unique station names
+stations = df['station'].unique()
+
+# Create a plot for each station
+for station in stations:
+    fig = create_seasonal_plot(df, station)
+    fig.show()
 ```
 
 

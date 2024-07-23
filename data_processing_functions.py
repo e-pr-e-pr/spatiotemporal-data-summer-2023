@@ -246,33 +246,3 @@ def four_levels_filter(data_dict, data_name):
             four_levels_only_gst_dict[new_key] = {'time': data['time'], 'data': data['data']}
     
     return four_levels_only_gst_dict
-
-def box_plot_metrics_over_levels(metric_dict, metric_name, xlabel, ylabel):
-    # convert metric_dict to a pandas DataFrame for easier plotting
-    data = {'Level': [], 'Metric': [], 'Value': []}
-
-    for station_metric, station_metrics in metric_dict.items():
-        level_name = station_metric.split('_')[1]
-        correlation_coefficient = station_metrics[station_metric.split('_')[0]][metric_name] # bad naming here, but its for the metric inthe metrics to plot thing!
-
-        data['Level'].append(level_name)
-        data['Metric'].append(metric_name)
-        data['Value'].append(correlation_coefficient)
-
-    df = pd.DataFrame(data)
-
-    fig, ax = plt.subplots(figsize=(10, 6))
-    levels = sorted(df['Level'].unique())  # Ensure levels are sorted
-    box_data = [df[df['Level'] == level]['Value'].tolist() for level in levels]
-    bp = ax.boxplot(box_data, labels=levels, showfliers=True, patch_artist=True)
-
-    # fill boxes with the same colour as levels from scatter
-    colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red']
-    for box, color in zip(bp['boxes'], colors):
-        box.set(facecolor=color, alpha=0.7)
-    
-    ax.set_title(f'Box Plot of {metric_name}, stations with 4 levels only, common time steps between levels - {xlabel} and {ylabel}')
-    ax.set_xlabel('Level')
-    ax.set_ylabel(metric_name)
-    
-    return fig

@@ -78,6 +78,7 @@ I wrote this code to also work with the many other variables and indices availab
 The function below takes the datasets to be analysed, here SWC and RECO, and puts them into a more flexible form for te purposes of analysis and visualisation - a dictionary. The data directly from fluxnet is in the form of individual .txt files for each station. Here, I take these individual files and all their contents, and stitch them together into a dictionary, to be accessed by the station name as a key. 
 
 ```{python}
+
 #| eval: false
 #| echo: true
 
@@ -104,6 +105,7 @@ def process_data_files(directory):
 
 For some variables, it is interesting to take the log of its value; this is what this function does, and it creates a new directionary with the same name + log i.e. log_reco_data_dict.
  ```{python}
+
 #| eval: false
 #| echo: true
 
@@ -594,7 +596,7 @@ def create_seasonal_plot(df, station):
 
 ## Generating the results
 
-So, that was a lot, but those functions make up most of the code! Now we can move on to some analysis. Lets use the 'process_data_files' function to stitch together our datasets, and also make a lof version of the RECO data set too, since that could be interesting:
+So, that was a lot, but those functions make up most of the code! Now we can move on to some analysis. Lets use the 'process_data_files' function to stitch together our datasets, and also make a log version of the RECO data set too, since that could be interesting:
 
 ```{python}
 reco_data_dict = process_data_files(reco_data)
@@ -724,78 +726,8 @@ fig.show()
 
 This map shows the locations ADD TO THIS . This is done for visualisation purposes. 
 
-We can now look at te temporal evolution of SWC and RECO at the different stations. This function filters for the stations with only 4 levels present, and plots them - with each plot featuring the 4 levels. 
 
-```{python}
-
-#| eval: false
-#| echo: false
-
-def plot_grouped_stations(prefix, grouped_data):
-    fig = go.Figure()
-    
-    for station_key, station_data in grouped_data.items():
-        times = station_data['time']
-        
-        for key, values in station_data.items():
-            if key != 'time':
-                fig.add_trace(go.Scatter(
-                    x=times,
-                    y=values,
-                    mode='lines',
-                    name=f'{station_key} - {key}'
-                ))
-    
-    fig.update_layout(
-        title=f'Soil Water Content - Station {prefix}',
-        xaxis_title='Time',
-        yaxis_title='Soil Water Content',
-        legend=dict(x=1.05, y=1, xanchor='left', yanchor='top'),
-        legend_title_text='Layers',
-        hovermode='x unified'
-    )
-    
-    return fig
-```
-
-```{python}
-def plot_grouped_stations(prefix, grouped_data):
-    # Create a subplot figure with 1 row and 1 column
-    fig = make_subplots(rows=1, cols=1, 
-                        subplot_titles=[f'Soil Water Content - Station {prefix}'])
-    
-    for station_key, station_data in grouped_data.items():
-        times = station_data['time']
-        
-        for key, values in station_data.items():
-            if key != 'time':
-                fig.add_trace(
-                    go.Scatter(
-                        x=times,
-                        y=values,
-                        mode='lines',
-                        name=f'{station_key} - {key}'
-                    )
-                )
-    
-    fig.update_layout(
-        height=600,  # Adjust the height as needed
-        width=1000,  # Adjust the width as needed
-        title_text=f"Soil Water Content for Station {prefix}",
-        showlegend=True,
-        legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5),
-        xaxis_title="Time",
-        yaxis_title="Soil Water Content"
-    )
-    
-    return fig
-
-
-```
-
-
-
-I now visualise the results of the metric calculations. The visual representation on a map creates an instructive first look at the potential patterns in the data: 
+I now visualise the results of the metric calculations. The visual representation on a map creates an instructive first look at the potential patterns in the data. The full table of the regression metrics between the levels in SWC stations, and te RECO can be found in the following table. The following plot is an example of a visual representation one could do to visual spatial patterns. (I tried to get it to work for all stations, but the loops and functions required just were not working for me :( )
 
 ```{python}
 
@@ -870,6 +802,76 @@ TALK A LITTLE ABOUT EACH OF THESE RESULTS
 
 TEMPORAL EVOLUTION
 
+We can now look at te temporal evolution of SWC and RECO at the different stations. This function filters for the stations with only continuous levels present, and plots them - with each plot featuring either 1,2,3, or 4 levels, depending on what was available in the data. The point is that the levels exist consistently across the time series. 
+
+```{python}
+
+#| eval: false
+#| echo: false
+
+def plot_grouped_stations(prefix, grouped_data):
+    fig = go.Figure()
+    
+    for station_key, station_data in grouped_data.items():
+        times = station_data['time']
+        
+        for key, values in station_data.items():
+            if key != 'time':
+                fig.add_trace(go.Scatter(
+                    x=times,
+                    y=values,
+                    mode='lines',
+                    name=f'{station_key} - {key}'
+                ))
+    
+    fig.update_layout(
+        title=f'Soil Water Content - Station {prefix}',
+        xaxis_title='Time',
+        yaxis_title='Soil Water Content',
+        legend=dict(x=1.05, y=1, xanchor='left', yanchor='top'),
+        legend_title_text='Layers',
+        hovermode='x unified'
+    )
+    
+    return fig
+```
+
+```{python}
+def plot_grouped_stations(prefix, grouped_data):
+    # Create a subplot figure with 1 row and 1 column
+    fig = make_subplots(rows=1, cols=1, 
+                        subplot_titles=[f'Soil Water Content - Station {prefix}'])
+    
+    for station_key, station_data in grouped_data.items():
+        times = station_data['time']
+        
+        for key, values in station_data.items():
+            if key != 'time':
+                fig.add_trace(
+                    go.Scatter(
+                        x=times,
+                        y=values,
+                        mode='lines',
+                        name=f'{station_key} - {key}'
+                    )
+                )
+    
+    fig.update_layout(
+        height=600,  # Adjust the height as needed
+        width=1000,  # Adjust the width as needed
+        title_text=f"Soil Water Content for Station {prefix}",
+        showlegend=True,
+        legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5),
+        xaxis_title="Time",
+        yaxis_title="Soil Water Content"
+    )
+    
+    return fig
+
+
+```
+
+
 ```{python}
 # make csv file into data frame for easy access
 fluxnet_locations = pd.read_csv(filtered_station_locations)
@@ -892,111 +894,75 @@ for prefix, grouped_data in grouped_stations.items():
 TALK A BIT ABOUT THE TEMP EVOL PLOTS
 mention the lines in it
 
-These plots are very messy, and a lot of them feature sections with very flat lines. These are simply points where, for a period of time, data at that level was not recorded for whatever reason. Even though this raw data is quite messy, we can still see 2 interesting things - the beaviour of SWC at different depths, and, in many cases, a strong seasonality. So then decided to look at the seasonal trends:
+These plots are very messy, and a lot of them feature sections with very flat lines. These are simply points where, for a period of time, data at that level was not recorded for whatever reason. Even though this raw data is quite messy, we can still see 2 interesting things - the beaviour of SWC at different depths, and, in many cases, a strong seasonality. So then decided to look at the seasonal trends. Again, I wasnt able to create the plots in the way I wanted to for this (it would have been many many pages long), so I have included here 2 example plots. I chose the stations FR-Hes, and ANOTHER, since the have a long time series, and so are the most optimal for demonstrating seasonal variation with this dataset. 
 
 
 
 ```{python}
-#| eval: false
-#| echo: false
-# plotting the mean seasonal variation of each station, as well as the standard deviation, first for SWC
+fr_hes_data = {key: value for key, value in swc_filtered.items() if key.startswith('FR-Hes')}
 
-# Assuming swc_filtered is your dictionary with the data
-# First, let's convert the dictionary to a DataFrame
-df_list = []
-for key, value in swc_filtered.items():
-    station = key.split('_')[0]
-    level = key.split('_')[1]
-    df = pd.DataFrame(value)
-    df['station'] = station
-    df['level'] = level
-    df_list.append(df)
+# Create a function to process the data and calculate monthly averages
+def process_level_data(data):
+    df = pd.DataFrame(data)
+    df['time'] = pd.to_datetime(df['time'])
+    df['month'] = df['time'].dt.month
+    monthly_avg = df.groupby('month')['data'].agg(['mean', 'std']).reset_index()
+    return monthly_avg
 
-df = pd.concat(df_list, ignore_index=True)
+# Process data for each level
+levels_data = {}
+for key, value in fr_hes_data.items():
+    level = key.split('_')[-1]  # Extract level from the key
+    levels_data[level] = process_level_data(value)
 
-# Convert 'time' to datetime if it's not already
-df['time'] = pd.to_datetime(df['time'])
+# Define colors for each level
+colors = ['blue', 'green', 'red', 'purple']
 
-# Add year and month columns
-df['year'] = df['time'].dt.year
-df['month'] = df['time'].dt.month
+# Create the plot
+fig = make_subplots(rows=2, cols=2, subplot_titles=["Level 1", "Level 2", "Level 3", "Level 4"])
 
+for i, (level, data) in enumerate(levels_data.items(), 1):
+    row = (i-1) // 2 + 1
+    col = (i-1) % 2 + 1
+    
+    fig.add_trace(
+        go.Scatter(
+            x=data['month'],
+            y=data['mean'],
+            mode='lines',
+            name=f'{level} Mean',
+            line=dict(color=colors[i-1])
+        ),
+        row=row, col=col
+    )
+    
+    fig.add_trace(
+        go.Scatter(
+            x=data['month'].tolist() + data['month'].tolist()[::-1],
+            y=(data['mean'] + data['std']).tolist() + (data['mean'] - data['std']).tolist()[::-1],
+            fill='toself',
+            fillcolor=f'rgba({i*50},0,255,0.1)',
+            line=dict(color='rgba(255,255,255,0)'),
+            name=f'{level} Std Dev',
+            showlegend=False
+        ),
+        row=row, col=col
+    )
 
-# Get unique station names
-stations = df['station'].unique()
+fig.update_layout(
+    height=800,
+    width=1000,
+    title_text="Seasonal Variation of SWC for FR-Hes",
+    showlegend=True
+)
 
-# Create a plot for each station
-for station in stations:
-    fig = create_seasonal_plot(df, station)
-    fig.show()
+for i in range(1, 5):
+    fig.update_xaxes(title_text="Month", row=(i-1)//2+1, col=(i-1)%2+1, tickvals=list(range(1, 13)), ticktext=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'])
+    fig.update_yaxes(title_text="SWC (%)", row=(i-1)//2+1, col=(i-1)%2+1)
+
+fig.show()
 ```
-
-```{python}
-
-# Example usage of the function
-# Convert the dictionary to a DataFrame
-df_list = []
-for key, value in swc_data_dict.items():
-    station = key.split('_')[0]
-    level = key.split('_')[1]
-    df = pd.DataFrame(value)
-    df['station'] = station
-    df['level'] = level
-    df_list.append(df)
-
-df = pd.concat(df_list, ignore_index=True)
-
-# Convert 'time' to datetime if it's not already
-df['time'] = pd.to_datetime(df['time'])
-
-# Add year and month columns
-df['year'] = df['time'].dt.year
-df['month'] = df['time'].dt.month
-
-# Get unique station names
-stations = df['station'].unique()
-
-# Create a plot for each station
-for station in stations:
-    fig = create_seasonal_plot(df, station)
-    fig.show()
-
-```
-
-And the same thing for RECO:
-ADD FUNCTION DESCRIPTION
-```{python}
-# plotting the mean seasonal variation of each station, as well as the standard deviation, first for SWC
-
-# Assuming swc_filtered is your dictionary with the data
-# First, let's convert the dictionary to a DataFrame
-df_list = []
-for key, value in reco_swc_filtered.items():
-    station = key.split('_')[0]
-    level = key.split('_')[1]
-    df = pd.DataFrame(value)
-    df['station'] = station
-    df['level'] = level
-    df_list.append(df)
-
-df = pd.concat(df_list, ignore_index=True)
-
-# Convert 'time' to datetime if it's not already
-df['time'] = pd.to_datetime(df['time'])
-
-# Add year and month columns
-df['year'] = df['time'].dt.year
-df['month'] = df['time'].dt.month
-
-
-# Get unique station names
-stations = df['station'].unique()
-
-# Create a plot for each station
-for station in stations:
-    fig = create_seasonal_plot(df, station)
-    fig.show()
-```
+DO THE SAME FOR RECO
 
 
 

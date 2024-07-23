@@ -218,6 +218,64 @@ def metrics_to_csv(metrics_dict, name1, name2):
 
     print(f'Successfully saved to {file_path}')
 ```
+The following function plots the results of the above metric claculation visually, on an interactive world map.
+
+```{python}
+def create_correlation_map(df, metric='correlation'):
+    fig = go.Figure()
+
+    # scatter plot for stations
+    scatter = go.Scattergeo(
+        lon = df['lon'],
+        lat = df['lat'],
+        text = df.apply(lambda row: f"Station: {row['station']}<br>Level: {row['level']}<br>{metric}: {row[metric]:.3f}", axis=1),
+        mode = 'markers',
+        marker = dict(
+            size = 8,
+            color = df[metric],
+            colorscale = 'RdBu',
+            reversescale = True,
+            colorbar_title = metric.capitalize(),
+            cmin = -1 if metric == 'correlation' else df[metric].min(),
+            cmax = 1 if metric == 'correlation' else df[metric].max(),
+        )
+    )
+    fig.add_trace(scatter)
+
+    # set the layout as desired
+    fig.update_layout(
+        title = dict(
+            text = f'Map of {metric.capitalize()} between RECO and SWC',
+            x = 0.5,  
+            y = 0.95 
+        ),
+        geo = dict(
+            showland = True,
+            showcountries = True,
+            showocean = True,
+            countrywidth = 0.5,
+            landcolor = 'rgb(243, 243, 243)',
+            oceancolor = 'rgb(230, 230, 250)',
+            projection = dict(
+                type = 'natural earth',
+                scale = 1.05  # slightly zoomed out
+            ),
+            lonaxis = dict(
+                range = [-180, 180]  
+            ),
+            lataxis = dict(
+                range = [-90, 90]  
+            ),
+        ),
+        width = 1100,  
+        height = 700, 
+        margin = dict(l=20, r=20, t=30, b=20)  
+    )
+
+    return fig
+```
+
+
 As briefly mentioned above, the levels feature of the FLUXNET data is very interesting. So, we ave some functions to filter for that. First we need to check that the levels each have the same time step - it could be, that at a particular time step, levels 1,2, and 4 were recorded and not level 3, due to equipment failure for example. In this case, we do not want it, because we want a consistent time series. So we check first for this time step consistency:
 
 ```{python}
@@ -576,5 +634,63 @@ for prefix, grouped_data in grouped_stations.items():
     plot_grouped_stations(prefix, grouped_data)
 
 print("All plots have been shown.")
+```
+
+TALK A BIT ABOUT THE TEMP EVOL PLOTS
+
+I now visualise the results of the metric calculations. The visual representation on a map creates an instructive first look at the potential patterns in the data: 
+
+```{python}
+# prep data for plotting
+plot_data = []
+for station, levels in swc_reco_four_levels_metrics.items():
+    station_name = station.split('_')[0]
+    station_info = filtered_station_locations[filtered_station_locations['station'] == station_name]
+    
+    if station_info.empty: # if loop to avoid some errors
+        print(f"Warning: No location data for station {station_name}")
+        continue
+    
+    station_info = station_info.iloc[0]
+    
+    for level, metrics in levels.items():
+        plot_data.append({
+            'station': station_name,
+            'level': level,
+            'lat': station_info['lat'],
+            'lon': station_info['lon'],
+            'correlation': metrics['correlation_coefficient'],
+            'r_squared': metrics['r_squared'],
+            'slope': metrics['slope'],
+            'intercept': metrics['intercept']
+        })
+
+
+# make the prepared data into a dataframe, to make te next step easier
+plot_df = pd.DataFrame(plot_data)
+
+
+# create and show the map!
+correlation_map = create_correlation_map(plot_df, 'correlation')
+correlation_map.show()
+
+
+```
+
+```{python}
+
+r_squared_map = create_correlation_map(plot_df, 'r_squared')
+r_squared_map.show()
+```
+
+```{python}
+slope_map = create_correlation_map(plot_df, 'slope')
+slope_map.show()
+
+```
+
+```{python}
+intercept_map = create_correlation_map(plot_df, 'intercept')
+intercept_map.show()
 ```
 

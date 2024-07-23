@@ -35,9 +35,11 @@ swc_data_dict = process_data_files(soil_water_data)
 
 ## Introduction 
 
-This is an analysis of Soil Water Content (SWC) and and Ecosystem Respiration (RECO) data.
+This is an analysis of Soil Water Content (SWC) and and Ecosystem Respiration (RECO) data. The variables are important for understanding ecosystem dynamics. SWC is a key component of the hydrological cycle, influencing water availability for plants and soil processes. It directly affects plant growth and productivity, . It also impacts soil structure, microbial activity, and organic matter decomposition. 
 
-GIVE A BIT OF BACKGROUND ON THE DATASET IE LEVELS ETC; JUSTIFY WHY ONLY 4 LEVELS
+RECO is the total respiration from plants, animals, and microorganisms. It is a balance of carbon uptake (photosynthesis) and release (respiration). It can also be viewed as an indicator of ecosystem health.
+
+This analysis aims to explore the relationship between SWC and RECO across various stations and levels. By examining these variables together, we can gain insights into how water availability influences carbon fluxes and overall ecosystem functioning.
 
 ## Setting up the functions to run the analysis
 
@@ -291,6 +293,7 @@ As briefly mentioned above, the levels feature of the FLUXNET data is very inter
 ```{python}
 #| eval: false
 #| echo: true
+#| output: false
 
 def remove_missing_time_steps(dict1):
     for station_name, levels_data in dict1.items():
@@ -312,7 +315,6 @@ def remove_missing_time_steps(dict1):
                 timestep = time_data[current_level][i]
 
                 if timestep not in time_data[reference_level]:
-                   # print(f'Removing timestep {timestep} from {current_level}') # just for debugging and interest. Prints a lot! 
 
                     # Remove corresponding 'data' value
                     del dict1[current_level]['data'][i]
@@ -509,6 +511,7 @@ swc_data_dict = process_data_files(soil_water_data)
 First, we remove any inconsistencies in the levels data:
 
 ```{python}
+#| output: false
 # for retaining time steps with 4 levels only. so obvi do only with data that has levels (i.e. not reco!) 
 
 remove_missing_time_steps(swc_data_dict) # if you want, you can name this and make it a seperate dictionary, to have one with 4 levels only, and one without the levels filtering. for te future of tis project, i am interested in the 4 levels only, so i will stick with that. 
@@ -802,76 +805,76 @@ And the same thing for RECO:
 ADD FUNCTION DESCRIPTION
 ```{python}
 def create_combined_interactive_plot(df, stations, featured_stations):
-
-    combined_fig = make_subplots(rows=1, cols=1)
+    # Create separate subplots for each featured station
+    fig = make_subplots(rows=len(featured_stations), cols=1, 
+                        subplot_titles=[f"Soil Water Content - {station}" for station in featured_stations])
     
-    for station in stations:
-        station_data = df[df['station'] == station]
+    # Add traces for featured stations
+    for i, featured_station in enumerate(featured_stations, start=1):
+        station_data = df[df['station'] == featured_station]
         for level in station_data['level'].unique():
             level_data = station_data[station_data['level'] == level]
-            combined_fig.add_trace(
+            fig.add_trace(
                 go.Scatter(
                     x=level_data['time'], 
                     y=level_data['data'], 
                     mode='lines', 
-                    name=f'{station} - {level}', 
-                    visible=(station in featured_stations)  # Only visible if it's a featured station
+                    name=f'{featured_station} - {level}',
+                    legendgroup=featured_station,
+                    showlegend=(i == 1)  # Show legend only for the first subplot
+                ),
+                row=i, col=1
+            )
+    
+    # Create dropdown options for non-featured stations
+    dropdown_options = [{'label': 'Featured Stations', 'method': 'update', 'args': [{'visible': [True] * len(fig.data)}]}]
+    
+    for station in stations:
+        if station not in featured_stations:
+            station_data = df[df['station'] == station]
+            traces = []
+            for level in station_data['level'].unique():
+                level_data = station_data[station_data['level'] == level]
+                traces.append(
+                    go.Scatter(
+                        x=level_data['time'], 
+                        y=level_data['data'], 
+                        mode='lines', 
+                        name=f'{station} - {level}',
+                        visible=False
+                    )
                 )
-            )
+            fig.add_traces(traces)
+            
+            # Add dropdown option for this station
+            visibility = [False] * len(fig.data)
+            for i in range(len(traces)):
+                visibility[-(i+1)] = True
+            dropdown_options.append({'label': station, 'method': 'update', 'args': [{'visible': visibility}]})
 
-    # Update layout with dropdown menu
-    combined_fig.update_layout(
-        updatemenus=[
-            dict(
-                active=0,
-                buttons=[
-                    dict(label='Featured Stations',
-                         method='update',
-                         args=[{'visible': [station in featured_stations for station in stations for _ in df[df['station'] == station]['level'].unique()]}]),
-                    *[dict(label=station,
-                           method='update',
-                           args=[{'visible': [s == station for s in stations for _ in df[df['station'] == s]['level'].unique()]}])
-                      for station in stations]
-                ],
-                x=1.15,
-                y=1.15,
-                xanchor="right",
-                yanchor="top"
-            )
-        ],
-        title="Soil Water Content - Interactive Plot",
+    # Update layout
+    fig.update_layout(
+        height=300 * len(featured_stations),  # Adjust height based on number of featured stations
+        updatemenus=[{
+            'buttons': dropdown_options,
+            'direction': 'down',
+            'showactive': True,
+            'x': 1.0,
+            'y': 1.1,
+            'xanchor': 'right',
+            'yanchor': 'top'
+        }],
         xaxis_title="Time",
         yaxis_title="Soil Water Content",
         showlegend=True
     )
 
-    return combined_fig
+    return fig
 
-
-df_list = []
-for key, value in reco_swc_filtered.items():
-    station = key.split('_')[0]
-    level = key.split('_')[1]
-    df = pd.DataFrame(value)
-    df['station'] = station
-    df['level'] = level
-    df_list.append(df)
-
-df = pd.concat(df_list, ignore_index=True)
-
-df['time'] = pd.to_datetime(df['time'])
-
-df['year'] = df['time'].dt.year
-df['month'] = df['time'].dt.month
-
-stations = df['station'].unique()
-
+# Usage remains the same
 featured_stations = ['DE-HoH', 'GF-Guy']  # change at will
-
-# Create the interactive plot
 fig = create_combined_interactive_plot(df, stations, featured_stations)
 fig.show()
-
 ```
 
 

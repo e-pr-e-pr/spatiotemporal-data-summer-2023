@@ -39,7 +39,7 @@ This is an analysis of Soil Water Content (SWC) and and Ecosystem Respiration (R
 
 RECO is the total respiration from plants, animals, and microorganisms. It is a balance of carbon uptake (photosynthesis) and release (respiration). It can also be viewed as an indicator of ecosystem health.
 
-What makes this dataset in particular interesting is the levels in the SWC dataset. The SWC is measured at 4 different depts in the soil
+What makes this dataset in particular interesting is the levels in the SWC dataset. The SWC is measured at 4 different depts in the soil (suurface, 0.3m, 0.5m, and 1m below). While I didnt get time to look at this in this project, a goal is to look at the behaviour of SWC at 4 levels, and look for example for cross correlation in that data. 
 
 This analysis aims to explore the relationship between SWC and RECO across various stations and levels. By examining these variables together, we can gain insights into how water availability influences carbon fluxes and overall ecosystem functioning.
 
@@ -288,6 +288,67 @@ def create_correlation_map(df, metric='correlation'):
     )
 
     return fig
+```
+
+
+```{python}
+
+def create_correlation_map(df, metric='correlation'):
+    # Create 2x2 subplot figure
+    fig = make_subplots(
+        rows=2, cols=2,
+        subplot_titles=("Level 1", "Level 2", "Level 3", "Level 4"),
+        specs=[[{"type": "scattermapbox"}, {"type": "scattermapbox"}],
+               [{"type": "scattermapbox"}, {"type": "scattermapbox"}]],
+        horizontal_spacing=0.05,
+        vertical_spacing=0.05
+    )
+
+    # Define the layout for each subplot
+    layout = dict(
+        mapbox=dict(
+            style="open-street-map",
+            center=dict(lat=df['lat'].mean(), lon=df['lon'].mean()),
+            zoom=1
+        ),
+        showlegend=False
+    )
+
+    # Add traces for each level
+    for i, level in enumerate(['l1', 'l2', 'l3', 'l4'], 1):
+        level_data = df[df['level'] == level]
+        
+        fig.add_trace(
+            go.Scattermapbox(
+                lat=level_data['lat'],
+                lon=level_data['lon'],
+                mode='markers',
+                marker=dict(
+                    size=10,
+                    color=level_data[metric],
+                    colorscale='RdYlBu',
+                    showscale=True,
+                    colorbar=dict(title=metric.capitalize()),
+                    cmin=-1 if metric == 'correlation' else df[metric].min(),
+                    cmax=1 if metric == 'correlation' else df[metric].max(),
+                ),
+                text=level_data.apply(lambda row: f"Station: {row['station']}<br>{metric.capitalize()}: {row[metric]:.2f}<br>R-squared: {row['r_squared']:.2f}<br>Slope: {row['slope']:.2f}<br>Intercept: {row['intercept']:.2f}", axis=1),
+                hoverinfo='text'
+            ),
+            row=(i-1)//2 + 1,
+            col=(i-1)%2 + 1
+        )
+
+    # Update layout
+    fig.update_layout(
+        height=1000,
+        width=1000,
+        title_text=f"Map of {metric.capitalize()} between RECO and SWC for Different Levels",
+        **layout
+    )
+
+    return fig
+
 ```
 
 
@@ -744,48 +805,34 @@ def plot_grouped_stations(prefix, grouped_data):
 ```
 
 ```{python}
-
-def plot_grouped_stations(prefixes, grouped_data_list):
-    # Calculate the number of rows needed
-    num_plots = len(prefixes)
-    num_rows = math.ceil(num_plots / 2)
-
-    # Create a subplot figure with 2 columns and calculated number of rows
-    fig = make_subplots(rows=num_rows, cols=2, 
-                        subplot_titles=[f'Soil Water Content - Station {prefix}' for prefix in prefixes])
+def plot_grouped_stations(prefix, grouped_data):
+    # Create a subplot figure with 1 row and 1 column
+    fig = make_subplots(rows=1, cols=1, 
+                        subplot_titles=[f'Soil Water Content - Station {prefix}'])
     
-    for i, (prefix, grouped_data) in enumerate(zip(prefixes, grouped_data_list)):
-        row = i // 2 + 1
-        col = i % 2 + 1
+    for station_key, station_data in grouped_data.items():
+        times = station_data['time']
         
-        for station_key, station_data in grouped_data.items():
-            times = station_data['time']
-            
-            for key, values in station_data.items():
-                if key != 'time':
-                    fig.add_trace(
-                        go.Scatter(
-                            x=times,
-                            y=values,
-                            mode='lines',
-                            name=f'{station_key} - {key}'
-                        ),
-                        row=row, col=col
+        for key, values in station_data.items():
+            if key != 'time':
+                fig.add_trace(
+                    go.Scatter(
+                        x=times,
+                        y=values,
+                        mode='lines',
+                        name=f'{station_key} - {key}'
                     )
+                )
     
     fig.update_layout(
-        height=300 * num_rows,  # Adjust the height based on the number of rows
+        height=600,  # Adjust the height as needed
         width=1000,  # Adjust the width as needed
-        title_text="Soil Water Content for Multiple Stations",
+        title_text=f"Soil Water Content for Station {prefix}",
         showlegend=True,
         legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5),
+        xaxis_title="Time",
+        yaxis_title="Soil Water Content"
     )
-    
-    # Update x and y axis labels for all subplots
-    for i in range(1, num_rows + 1):
-        for j in range(1, 3):
-            fig.update_xaxes(title_text="Time", row=i, col=j)
-            fig.update_yaxes(title_text="Soil Water Content", row=i, col=j)
     
     return fig
 
@@ -797,38 +844,39 @@ def plot_grouped_stations(prefixes, grouped_data_list):
 I now visualise the results of the metric calculations. The visual representation on a map creates an instructive first look at the potential patterns in the data: 
 
 ```{python}
-# prep data for plotting
-fluxnet_locations = pd.read_csv(filtered_station_locations) # csv to dataframe for easier processing
 
+# Usage:
+fluxnet_locations = pd.read_csv(filtered_station_locations)
+
+# Prepare data for plotting
 plot_data = []
 for station, levels in swc_reco_four_levels_metrics.items():
     station_name = station.split('_')[0]
+    level = station.split('_')[-1]  # Extract level from station key
     station_info = fluxnet_locations[fluxnet_locations['station'] == station_name]
     
-    if station_info.empty: # if loop to avoid some errors
+    if station_info.empty:
         print(f"Warning: No location data for station {station_name}")
         continue
     
     station_info = station_info.iloc[0]
     
-    for level, metrics in levels.items():
-        plot_data.append({
-            'station': station_name,
-            'level': level,
-            'lat': station_info['lat'],
-            'lon': station_info['lon'],
-            'correlation': metrics['correlation_coefficient'],
-            'r_squared': metrics['r_squared'],
-            'slope': metrics['slope'],
-            'intercept': metrics['intercept']
-        })
+    metrics = levels[station_name]  # Access metrics directly
+    plot_data.append({
+        'station': station_name,
+        'level': level,
+        'lat': station_info['lat'],
+        'lon': station_info['lon'],
+        'correlation': metrics['correlation_coefficient'],
+        'r_squared': metrics['r_squared'],
+        'slope': metrics['slope'],
+        'intercept': metrics['intercept']
+    })
 
-
-# make the prepared data into a dataframe, to make te next step easier
+# Create DataFrame
 plot_df = pd.DataFrame(plot_data)
 
-
-# create and show the map!
+# Create and show the map
 correlation_map = create_correlation_map(plot_df, 'correlation')
 correlation_map.show()
 ```

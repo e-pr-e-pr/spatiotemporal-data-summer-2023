@@ -657,26 +657,32 @@ We can now look at te temporal evolution of SWC and RECO at the different statio
 
 ```{python}
 
+
 def plot_grouped_stations(prefix, grouped_data):
-    fig, ax = plt.subplots(figsize=(12, 6))
+    fig = go.Figure()
     
     for station_key, station_data in grouped_data.items():
         times = station_data['time']
         
         for key, values in station_data.items():
             if key != 'time':
-                ax.plot(times, values, label=f'{station_key} - {key}')
+                fig.add_trace(go.Scatter(
+                    x=times,
+                    y=values,
+                    mode='lines',
+                    name=f'{station_key} - {key}'
+                ))
     
-    ax.set_title(f'Soil Water Content - Station {prefix}')
-    ax.set_xlabel('Time')
-    ax.set_ylabel('Soil Water Content')
-    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-    ax.grid(True)
-    fig.tight_layout()
+    fig.update_layout(
+        title=f'Soil Water Content - Station {prefix}',
+        xaxis_title='Time',
+        yaxis_title='Soil Water Content',
+        legend=dict(x=1.05, y=1, xanchor='left', yanchor='top'),
+        legend_title_text='Layers',
+        hovermode='x unified'
+    )
     
-    # Instead of returning the figure, display it
-    display(fig)
-    plt.close(fig)  # Close the figure to free up memory
+    return fig
 
 # make csv file into data frame for easy access
 fluxnet_locations = pd.read_csv(filtered_station_locations)
@@ -691,7 +697,8 @@ for station_key, station_data in swc_data_dict.items():
 
 # Plot for each station, all the layers
 for prefix, grouped_data in grouped_stations.items():
-    plot_grouped_stations(prefix, grouped_data)
+    fig = plot_grouped_stations(prefix, grouped_data)
+    fig.show()
 
 ```
 
@@ -809,21 +816,44 @@ ADD FUNCTION DESCRIPTION
 def create_combined_interactive_plot(df, stations, featured_stations):
     # Create separate subplots for each featured station
     fig = make_subplots(rows=len(featured_stations), cols=1, 
-                        subplot_titles=[f"Soil Water Content - {station}" for station in featured_stations])
+                        subplot_titles=[f"Seasonal Soil Water Content - {station}" for station in featured_stations])
     
     # Add traces for featured stations
     for i, featured_station in enumerate(featured_stations, start=1):
         station_data = df[df['station'] == featured_station]
+        
         for level in station_data['level'].unique():
             level_data = station_data[station_data['level'] == level]
+            
+            # Group by month and calculate mean and std
+            monthly_data = level_data.groupby(level_data['time'].dt.month).agg({'data': ['mean', 'std']})
+            monthly_data.columns = ['mean', 'std']
+            monthly_data = monthly_data.reset_index()
+            
+            # Add trace for mean
             fig.add_trace(
                 go.Scatter(
-                    x=level_data['time'], 
-                    y=level_data['data'], 
-                    mode='lines', 
+                    x=monthly_data['time'],
+                    y=monthly_data['mean'],
+                    mode='lines',
                     name=f'{featured_station} - {level}',
                     legendgroup=featured_station,
-                    showlegend=(i == 1)  # Show legend only for the first subplot
+                    showlegend=(i == 1)
+                ),
+                row=i, col=1
+            )
+            
+            # Add trace for standard deviation
+            fig.add_trace(
+                go.Scatter(
+                    x=monthly_data['time'].tolist() + monthly_data['time'].tolist()[::-1],
+                    y=(monthly_data['mean'] + monthly_data['std']).tolist() + 
+                       (monthly_data['mean'] - monthly_data['std']).tolist()[::-1],
+                    fill='toself',
+                    fillcolor='rgba(0,100,80,0.2)',
+                    line=dict(color='rgba(255,255,255,0)'),
+                    showlegend=False,
+                    name=f'{featured_station} - {level} Std Dev'
                 ),
                 row=i, col=1
             )
@@ -837,12 +867,34 @@ def create_combined_interactive_plot(df, stations, featured_stations):
             traces = []
             for level in station_data['level'].unique():
                 level_data = station_data[station_data['level'] == level]
+                
+                # Group by month and calculate mean and std
+                monthly_data = level_data.groupby(level_data['time'].dt.month).agg({'data': ['mean', 'std']})
+                monthly_data.columns = ['mean', 'std']
+                monthly_data = monthly_data.reset_index()
+                
+                # Add trace for mean
                 traces.append(
                     go.Scatter(
-                        x=level_data['time'], 
-                        y=level_data['data'], 
-                        mode='lines', 
+                        x=monthly_data['time'],
+                        y=monthly_data['mean'],
+                        mode='lines',
                         name=f'{station} - {level}',
+                        visible=False
+                    )
+                )
+                
+                # Add trace for standard deviation
+                traces.append(
+                    go.Scatter(
+                        x=monthly_data['time'].tolist() + monthly_data['time'].tolist()[::-1],
+                        y=(monthly_data['mean'] + monthly_data['std']).tolist() + 
+                           (monthly_data['mean'] - monthly_data['std']).tolist()[::-1],
+                        fill='toself',
+                        fillcolor='rgba(0,100,80,0.2)',
+                        line=dict(color='rgba(255,255,255,0)'),
+                        showlegend=False,
+                        name=f'{station} - {level} Std Dev',
                         visible=False
                     )
                 )
@@ -856,7 +908,7 @@ def create_combined_interactive_plot(df, stations, featured_stations):
 
     # Update layout
     fig.update_layout(
-        height=300 * len(featured_stations),  # Adjust height based on number of featured stations
+        height=300 * len(featured_stations),
         updatemenus=[{
             'buttons': dropdown_options,
             'direction': 'down',
@@ -866,10 +918,17 @@ def create_combined_interactive_plot(df, stations, featured_stations):
             'xanchor': 'right',
             'yanchor': 'top'
         }],
-        xaxis_title="Time",
+        xaxis_title="Month",
         yaxis_title="Soil Water Content",
         showlegend=True
     )
+
+    # Update x-axis to show month names
+    for i in range(1, len(featured_stations) + 1):
+        fig.update_xaxes(tickvals=list(range(1, 13)), 
+                         ticktext=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                                   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                         row=i, col=1)
 
     return fig
 

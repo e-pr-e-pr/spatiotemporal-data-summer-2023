@@ -55,6 +55,7 @@ import csv
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go # interactive plots
 from plotly.subplots import make_subplots # for dropdown menu
+from IPython.display import display, HTML # to elp the matplotlib plots render properly
 import matplotlib.dates as mdates
 import datetime
 from datetime import datetime
@@ -656,7 +657,6 @@ We can now look at te temporal evolution of SWC and RECO at the different statio
 
 ```{python}
 
-# Function to plot time series plots of the datasets
 def plot_grouped_stations(prefix, grouped_data):
     fig, ax = plt.subplots(figsize=(12, 6))
     
@@ -674,7 +674,9 @@ def plot_grouped_stations(prefix, grouped_data):
     ax.grid(True)
     fig.tight_layout()
     
-    return fig  
+    # Instead of returning the figure, display it
+    display(fig)
+    plt.close(fig)  # Close the figure to free up memory
 
 # make csv file into data frame for easy access
 fluxnet_locations = pd.read_csv(filtered_station_locations)
@@ -689,8 +691,8 @@ for station_key, station_data in swc_data_dict.items():
 
 # Plot for each station, all the layers
 for prefix, grouped_data in grouped_stations.items():
-    fig = plot_grouped_stations(prefix, grouped_data)
-    plt.show()
+    plot_grouped_stations(prefix, grouped_data)
+
 ```
 
 TALK A BIT ABOUT THE TEMP EVOL PLOTS

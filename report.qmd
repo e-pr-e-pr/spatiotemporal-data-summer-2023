@@ -657,7 +657,6 @@ We can now look at te temporal evolution of SWC and RECO at the different statio
 
 ```{python}
 
-
 def plot_grouped_stations(prefix, grouped_data):
     fig = go.Figure()
     
@@ -683,6 +682,12 @@ def plot_grouped_stations(prefix, grouped_data):
     )
     
     return fig
+```
+
+
+```{python}
+
+
 
 # make csv file into data frame for easy access
 fluxnet_locations = pd.read_csv(filtered_station_locations)

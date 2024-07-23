@@ -662,8 +662,9 @@ def plot_grouped_stations(prefix, grouped_data):
     
     plt.show()
 
-# read the sttaion names from the CSV file
-valid_prefixes = set(filtered_station_locations['station'])  
+# make csv file into data frame for easy access
+fluxnet_locations = pd.read_csv(filtered_station_locations)
+valid_prefixes = set(fluxnet_locations['station'])  
 
 # group stations by prefix
 grouped_stations = defaultdict(dict)

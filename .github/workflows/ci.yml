@@ -33,6 +33,9 @@ jobs:
         -e QUARTO_DENO_EXTRA_OPTIONS="--v8-flags=--stack-size=8176" \
         your-project-image \
         bash -c "pip install -r requirements.txt && quarto render report.qmd"
+        
+    - name: Copy CSS file
+      run: cp custom.css _site/custom.css
 
     - name: Upload rendered document
       uses: actions/upload-artifact@v2

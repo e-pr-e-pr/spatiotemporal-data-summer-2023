@@ -11,10 +11,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
         python-version: '3.11'
 
@@ -35,7 +35,7 @@ jobs:
         bash -c "pip install -r requirements.txt && quarto render report.qmd"
 
     - name: Upload rendered document
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
-        name: rendered-report
+        name: E-Percy-Rouhaud-SWC-RECO-analysis-STD-submission
         path: report.html

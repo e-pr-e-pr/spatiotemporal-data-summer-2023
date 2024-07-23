@@ -442,6 +442,50 @@ def box_plot_metrics_over_levels(metric_dict, metric_name, xlabel, ylabel):
     return fig
 ```
 
+The following function creates an interactive plot of the seasonal variation of the data. The specific metrics plotted here are the mean, and the standard deviation. 
+
+```{python}
+# Function to create a seasonal plot for a station
+def create_seasonal_plot(df, station):
+    # Group by month and calculate mean and standard deviation
+    monthly_data = df[df['station'] == station].groupby('month')['data'].agg(['mean', 'std']).reset_index()
+    
+    fig = go.Figure()
+    
+    # Add mean line
+    fig.add_trace(go.Scatter(
+        x=monthly_data['month'],
+        y=monthly_data['mean'],
+        mode='lines',
+        name='Mean',
+        line=dict(color='blue', width=2)
+    ))
+    
+    # add shaded area for standard deviation
+    fig.add_trace(go.Scatter(
+        x=np.concatenate([monthly_data['month'], monthly_data['month'][::-1]]),
+        y=np.concatenate([monthly_data['mean'] + monthly_data['std'], 
+                          (monthly_data['mean'] - monthly_data['std'])[::-1]]),
+        fill='toself',
+        fillcolor='rgba(0,0,255,0.1)',
+        line=dict(color='rgba(255,255,255,0)'),
+        hoverinfo="skip",
+        showlegend=False
+    ))
+    
+    fig.update_layout(
+        title=f'Average Seasonal Pattern for Station {station}',
+        xaxis_title='Month',
+        yaxis_title='SWC (%)',
+        xaxis=dict(tickmode='array', tickvals=list(range(1, 13)), ticktext=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']),
+        legend_title='',
+        hovermode="x"
+    )
+    
+    return fig
+
+```
+
 So, that was a lot, but those functions make up most of the code! Now we can move on to some analysis. Lets use the 'process_data_files' function to stitch together our datasets, and also make a lof version of the RECO data set too, since that could be interesting:
 
 ```{python}
@@ -619,8 +663,7 @@ def plot_grouped_stations(prefix, grouped_data):
     plt.show()
 
 # Read the prefixes from the CSV file
-fluxnet_locations = pd.read_csv('C:/Users/violi/Documents/ESDSRS/STD/filtered-fluxnet-station-coords.csv')
-valid_prefixes = set(fluxnet_locations['prefix'])  # Assuming the column name is 'prefix'
+valid_prefixes = set(filtered_station_locations['prefix'])  # Assuming the column name is 'prefix'
 
 # Group stations by prefix
 grouped_stations = defaultdict(dict)
@@ -673,8 +716,6 @@ plot_df = pd.DataFrame(plot_data)
 # create and show the map!
 correlation_map = create_correlation_map(plot_df, 'correlation')
 correlation_map.show()
-
-
 ```
 
 ```{python}
@@ -683,6 +724,20 @@ r_squared_map = create_correlation_map(plot_df, 'r_squared')
 r_squared_map.show()
 ```
 
+As can be seen from the output of this cell, some stations do not have location data. I am not really sure why this is; I checked again on the FLUXNET website, where the data is located, and they are not present there. Therefore the following world map visualisation of the data do not feature the stations that do not have available location information. The following code confirms which stations are not present in the location data table: 
+
+```{python}
+# checking which prefixes are present in the final dataset, just to see if I can Idenitfy tem. Taking into consideration the ones that dont have coordinates on FLUXNET, for some reason. 
+unique_prefixes = set()
+
+for key in swc_filtered.keys():
+    # prefix extraction
+    prefix = key.split('_')[0]
+    unique_prefixes.add(prefix)
+
+for prefix in unique_prefixes:
+    print(prefix)
+```
 ```{python}
 slope_map = create_correlation_map(plot_df, 'slope')
 slope_map.show()
@@ -694,3 +749,38 @@ intercept_map = create_correlation_map(plot_df, 'intercept')
 intercept_map.show()
 ```
 
+TALK A LITTLE ABOUT EACH OF THESE RESULTS
+
+
+```{python}
+# plotting the mean seasonal variation of each station, as well as the standard deviation, first for SWC
+
+# Assuming swc_filtered is your dictionary with the data
+# First, let's convert the dictionary to a DataFrame
+df_list = []
+for key, value in swc_filtered.items():
+    station = key.split('_')[0]
+    level = key.split('_')[1]
+    df = pd.DataFrame(value)
+    df['station'] = station
+    df['level'] = level
+    df_list.append(df)
+
+df = pd.concat(df_list, ignore_index=True)
+
+# Convert 'time' to datetime if it's not already
+df['time'] = pd.to_datetime(df['time'])
+
+# Add year and month columns
+df['year'] = df['time'].dt.year
+df['month'] = df['time'].dt.month
+
+
+# Get unique station names
+stations = df['station'].unique()
+
+# Create a plot for each station
+for station in stations:
+    fig = create_seasonal_plot(df, station)
+    fig.show()
+```

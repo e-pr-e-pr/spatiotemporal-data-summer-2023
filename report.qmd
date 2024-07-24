@@ -797,7 +797,7 @@ swc_reco_metrics_df = pd.DataFrame(data)
 
 
 # Merge location data with your metrics based on the station name
-swc_reco_merged_df = swc_reco_metrics_df.merge(station_locations_df, on='station', how='left'
+swc_reco_merged_df = swc_reco_metrics_df.merge(station_locations_df, on='station', how='left')
 
 # Create the figure
 metrics = ['correlation_coefficient', 'r_squared', 'slope', 'intercept']

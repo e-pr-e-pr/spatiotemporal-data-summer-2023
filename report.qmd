@@ -1,8 +1,7 @@
 ---
 title: "Soil Water Content and Ecosystem Respiration Analysis"
-author: 
-  name: "**Eleanor Percy-Rouhaud**"  
-  subtitle: "Matriculation Number: 3749872"
+author:  "**Eleanor Percy-Rouhaud**"  
+subtitle: "Matriculation Number: 3749872"
 format:
   html:
     code-fold: true
@@ -86,7 +85,6 @@ I wrote this code to also work with the many other variables and indices availab
 The function below takes the datasets to be analysed, here SWC and RECO, and puts them into a more flexible form for te purposes of analysis and visualisation - a dictionary. The data directly from fluxnet is in the form of individual .txt files for each station. Here, I take these individual files and all their contents, and stitch them together into a dictionary, to be accessed by the station name as a key. 
 
 ```{python}
-
 def process_data_files(directory):
     data_dict = {}
     for file in os.listdir(directory):
@@ -106,11 +104,12 @@ def process_data_files(directory):
         data_dict[station_name] = {'time': time, 'data': data}
 
     return data_dict
-  ```
+```
 
 For some variables, it is interesting to take the log of its value; this is what this function does, and it creates a new directionary with the same name + log i.e. log_reco_data_dict.
 
- ```{python}
+
+```{python}
   def log_transfo_data_dict(original_data_dict):
     log_transformed_dict = {}
 
@@ -119,11 +118,11 @@ For some variables, it is interesting to take the log of its value; this is what
         log_transformed_dict[station_name] = {'time': data_info['time'], 'data': log_transformed_data}
 
     return log_transformed_dict
-  ```
+```
 
   The function below takes whichever variables you want - again, here only SWC and RECO - and calculates various regression metrics of them, namely the r sqaured metric, the Pearson correlation coefficient, as well as the linear regression metrics (slope and intercept). 
 
- ```{python}
+```{python}
 def calculate_regression_metrics(x, y):
     x = np.array(x)
     y = np.array(y)

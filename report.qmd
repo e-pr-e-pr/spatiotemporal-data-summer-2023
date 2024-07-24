@@ -236,11 +236,11 @@ def metrics_to_csv(metrics_dict, name1, name2):
 
     print(f'Successfully saved to {file_path}')
 ```
-The following function plots the results of the above metric claculation visually, on an interactive world map.
+The following function plots the results of the above metric claculation visually, on an interactive world map. Please note that I had quite a few problems with the rendering of the images in html - it works fine in my local IDE. So I didnt use this code i n this report due to rendering issues, but it does work when used locally. 
 
 ```{python}
 #| eval: false
-#| echo: false
+#| echo: true
 def create_correlation_map(df, metric='correlation'):
     fig = go.Figure()
 
@@ -295,66 +295,6 @@ def create_correlation_map(df, metric='correlation'):
     return fig
 ```
 
-
-```{python}
-
-def create_correlation_map(df, metric='correlation'):
-    # Create 2x2 subplot figure
-    fig = make_subplots(
-        rows=2, cols=2,
-        subplot_titles=("Level 1", "Level 2", "Level 3", "Level 4"),
-        specs=[[{"type": "scattermapbox"}, {"type": "scattermapbox"}],
-               [{"type": "scattermapbox"}, {"type": "scattermapbox"}]],
-        horizontal_spacing=0.05,
-        vertical_spacing=0.05
-    )
-
-    # Define the layout for each subplot
-    layout = dict(
-        mapbox=dict(
-            style="open-street-map",
-            center=dict(lat=df['lat'].mean(), lon=df['lon'].mean()),
-            zoom=1
-        ),
-        showlegend=False
-    )
-
-    # Add traces for each level
-    for i, level in enumerate(['l1', 'l2', 'l3', 'l4'], 1):
-        level_data = df[df['level'] == level]
-        
-        fig.add_trace(
-            go.Scattermapbox(
-                lat=level_data['lat'],
-                lon=level_data['lon'],
-                mode='markers',
-                marker=dict(
-                    size=10,
-                    color=level_data[metric],
-                    colorscale='RdYlBu',
-                    showscale=True,
-                    colorbar=dict(title=metric.capitalize()),
-                    cmin=-1 if metric == 'correlation' else df[metric].min(),
-                    cmax=1 if metric == 'correlation' else df[metric].max(),
-                ),
-                text=level_data.apply(lambda row: f"Station: {row['station']}<br>{metric.capitalize()}: {row[metric]:.2f}<br>R-squared: {row['r_squared']:.2f}<br>Slope: {row['slope']:.2f}<br>Intercept: {row['intercept']:.2f}", axis=1),
-                hoverinfo='text'
-            ),
-            row=(i-1)//2 + 1,
-            col=(i-1)%2 + 1
-        )
-
-    # Update layout
-    fig.update_layout(
-        height=1000,
-        width=1000,
-        title_text=f"Map of {metric.capitalize()} between RECO and SWC for Different Levels",
-        **layout
-    )
-
-    return fig
-
-```
 
 
 As briefly mentioned above, the levels feature of the FLUXNET data is very interesting. So, we ave some functions to filter for that. First we need to check that the levels each have the same time step - it could be, that at a particular time step, levels 1,2, and 4 were recorded and not level 3, due to equipment failure for example. In this case, we do not want it, because we want a consistent time series. So we check first for this time step consistency:
@@ -731,48 +671,72 @@ This map shows the locations ADD TO THIS . This is done for visualisation purpos
 I now visualise the results of the metric calculations. The visual representation on a map creates an instructive first look at the potential patterns in the data. The full table of the regression metrics between the levels in SWC stations, and te RECO can be found in the following table. The following plot is an example of a visual representation one could do to visual spatial patterns. (I tried to get it to work for all stations, but the loops and functions required just were not working for me :( )
 
 ```{python}
+# Load station locations
+df = pd.read_csv(filtered_station_locations)
 
-# Usage:
-fluxnet_locations = pd.read_csv(filtered_station_locations)
+# Load your metrics data
+swc_reco_four_levels_metrics = {...}  # Your dictionary data
 
-# Prepare data for plotting
-plot_data = []
-for station, levels in swc_reco_four_levels_metrics.items():
-    station_name = station.split('_')[0]
-    level = station.split('_')[-1]  # Extract level from station key
-    station_info = fluxnet_locations[fluxnet_locations['station'] == station_name]
+# Convert metrics dictionary to DataFrame
+metrics_df = pd.DataFrame.from_dict(swc_reco_four_levels_metrics, orient='index')
+metrics_df.reset_index(inplace=True)
+metrics_df.rename(columns={'index': 'station'}, inplace=True)
+
+# Extract location and level from station names in metrics_df
+metrics_df[['location', 'level']] = metrics_df['station'].str.split('_', expand=True)
+
+# Merge location data with your metrics
+merged_df = metrics_df.merge(df, on='location', how='left')
+
+def create_world_map(df, metric, level):
+    level_data = df[df['level'] == level]
     
-    if station_info.empty:
-        print(f"Warning: No location data for station {station_name}")
-        continue
-    
-    station_info = station_info.iloc[0]
-    
-    metrics = levels[station_name]  # Access metrics directly
-    plot_data.append({
-        'station': station_name,
-        'level': level,
-        'lat': station_info['lat'],
-        'lon': station_info['lon'],
-        'correlation': metrics['correlation_coefficient'],
-        'r_squared': metrics['r_squared'],
-        'slope': metrics['slope'],
-        'intercept': metrics['intercept']
-    })
+    fig = go.Figure(data=go.Scattergeo(
+        lon = level_data['longitude'],
+        lat = level_data['latitude'],
+        text = level_data['station'] + '<br>' + metric + ': ' + level_data[metric].round(3).astype(str),
+        mode = 'markers',
+        marker = dict(
+            size = 8,
+            color = level_data[metric],
+            colorscale = 'Viridis',
+            showscale = True,
+            colorbar_title = metric
+        )
+    ))
 
-# Create DataFrame
-plot_df = pd.DataFrame(plot_data)
+    fig.update_layout(
+        title = f'{metric.capitalize()} for Level {level}',
+        geo = dict(
+            showland = True,
+            showcountries = True,
+            showocean = True,
+            countrywidth = 0.5,
+            landcolor = 'rgb(243, 243, 243)',
+            oceancolor = 'rgb(230, 230, 250)',
+        )
+    )
+    
+    return fig
 
-# Create and show the map
-correlation_map = create_correlation_map(plot_df, 'correlation')
-correlation_map.show()
+metrics = ['correlation', 'r_squared', 'slope', 'intercept']
+levels = ['l1', 'l2', 'l3', 'l4']
+
+for metric in metrics:
+    for level in levels:
+        fig = create_world_map(merged_df, metric, level)
+        fig.show()
 ```
+
+Here is a table of the results, too:
 
 ```{python}
-
-r_squared_map = create_correlation_map(plot_df, 'r_squared')
-r_squared_map.show()
+numeric_columns = ['correlation', 'r_squared', 'slope', 'intercept']
+metrics_df[numeric_columns] = metrics_df[numeric_columns].round(3)
+metrics_df = metrics_df.sort_values('station')
+print(metrics_df.to_markdown(index=False))
 ```
+
 
 As can be seen from the output of this cell, some stations do not have location data. I am not really sure why this is; I checked again on the FLUXNET website, where the data is located, and they are not present there. Therefore the following world map visualisation of the data do not feature the stations that do not have available location information. The following code confirms which stations are not present in the location data table: 
 
@@ -788,16 +752,6 @@ for key in swc_filtered.keys():
 for prefix in unique_prefixes:
     print(prefix)
 ```
-```{python}
-slope_map = create_correlation_map(plot_df, 'slope')
-slope_map.show()
-
-```
-
-```{python}
-intercept_map = create_correlation_map(plot_df, 'intercept')
-intercept_map.show()
-```
 
 TALK A LITTLE ABOUT EACH OF THESE RESULTS
 
@@ -805,92 +759,8 @@ TEMPORAL EVOLUTION
 
 We can now look at te temporal evolution of SWC and RECO at the different stations. This function filters for the stations with only continuous levels present, and plots them - with each plot featuring either 1,2,3, or 4 levels, depending on what was available in the data. The point is that the levels exist consistently across the time series. 
 
-```{python}
-
-#| eval: false
-#| echo: false
-
-def plot_grouped_stations(prefix, grouped_data):
-    fig = go.Figure()
-    
-    for station_key, station_data in grouped_data.items():
-        times = station_data['time']
-        
-        for key, values in station_data.items():
-            if key != 'time':
-                fig.add_trace(go.Scatter(
-                    x=times,
-                    y=values,
-                    mode='lines',
-                    name=f'{station_key} - {key}'
-                ))
-    
-    fig.update_layout(
-        title=f'Soil Water Content - Station {prefix}',
-        xaxis_title='Time',
-        yaxis_title='Soil Water Content',
-        legend=dict(x=1.05, y=1, xanchor='left', yanchor='top'),
-        legend_title_text='Layers',
-        hovermode='x unified'
-    )
-    
-    return fig
-```
-
-```{python}
-def plot_grouped_stations(prefix, grouped_data):
-    # Create a subplot figure with 1 row and 1 column
-    fig = make_subplots(rows=1, cols=1, 
-                        subplot_titles=[f'Soil Water Content - Station {prefix}'])
-    
-    for station_key, station_data in grouped_data.items():
-        times = station_data['time']
-        
-        for key, values in station_data.items():
-            if key != 'time':
-                fig.add_trace(
-                    go.Scatter(
-                        x=times,
-                        y=values,
-                        mode='lines',
-                        name=f'{station_key} - {key}'
-                    )
-                )
-    
-    fig.update_layout(
-        height=600,  # Adjust the height as needed
-        width=1000,  # Adjust the width as needed
-        title_text=f"Soil Water Content for Station {prefix}",
-        showlegend=True,
-        legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5),
-        xaxis_title="Time",
-        yaxis_title="Soil Water Content"
-    )
-    
-    return fig
 
 
-```
-
-
-```{python}
-# make csv file into data frame for easy access
-fluxnet_locations = pd.read_csv(filtered_station_locations)
-valid_prefixes = set(fluxnet_locations['station'])  
-
-# group stations by prefix
-grouped_stations = defaultdict(dict)
-for station_key, station_data in swc_data_dict.items():
-    prefix = station_key.split('_')[0]  # Extract prefix (e.g., 'AR-SLu')
-    if prefix in valid_prefixes:  # Only include stations with valid prefixes
-        grouped_stations[prefix][station_key] = station_data
-
-# Plot for each station, all the layers
-for prefix, grouped_data in grouped_stations.items():
-    fig = plot_grouped_stations(prefix, grouped_data)
-    fig.show()
-
-```
 
 TALK A BIT ABOUT THE TEMP EVOL PLOTS
 mention the lines in it
@@ -898,71 +768,7 @@ mention the lines in it
 These plots are very messy, and a lot of them feature sections with very flat lines. These are simply points where, for a period of time, data at that level was not recorded for whatever reason. Even though this raw data is quite messy, we can still see 2 interesting things - the beaviour of SWC at different depths, and, in many cases, a strong seasonality. So then decided to look at the seasonal trends. Again, I wasnt able to create the plots in the way I wanted to for this (it would have been many many pages long), so I have included here 2 example plots. I chose the stations FR-Hes, and ANOTHER, since the have a long time series, and so are the most optimal for demonstrating seasonal variation with this dataset. However, it is not so bad, since they are 'just' visualisations, and the meaningful numbers can b
 
 
-
-```{python}
-fr_hes_data = {key: value for key, value in swc_filtered.items() if key.startswith('FR-Hes')}
-
-# Create a function to process the data and calculate monthly averages
-def process_level_data(data):
-    df = pd.DataFrame(data)
-    df['time'] = pd.to_datetime(df['time'])
-    df['month'] = df['time'].dt.month
-    monthly_avg = df.groupby('month')['data'].agg(['mean', 'std']).reset_index()
-    return monthly_avg
-
-# Process data for each level
-levels_data = {}
-for key, value in fr_hes_data.items():
-    level = key.split('_')[-1]  # Extract level from the key
-    levels_data[level] = process_level_data(value)
-
-# Define colors for each level
-colors = ['blue', 'green', 'red', 'purple']
-
-# Create the plot
-fig = make_subplots(rows=2, cols=2, subplot_titles=["Level 1", "Level 2", "Level 3", "Level 4"])
-
-for i, (level, data) in enumerate(levels_data.items(), 1):
-    row = (i-1) // 2 + 1
-    col = (i-1) % 2 + 1
-    
-    fig.add_trace(
-        go.Scatter(
-            x=data['month'],
-            y=data['mean'],
-            mode='lines',
-            name=f'{level} Mean',
-            line=dict(color=colors[i-1])
-        ),
-        row=row, col=col
-    )
-    
-    fig.add_trace(
-        go.Scatter(
-            x=data['month'].tolist() + data['month'].tolist()[::-1],
-            y=(data['mean'] + data['std']).tolist() + (data['mean'] - data['std']).tolist()[::-1],
-            fill='toself',
-            fillcolor=f'rgba({i*50},0,255,0.1)',
-            line=dict(color='rgba(255,255,255,0)'),
-            name=f'{level} Std Dev',
-            showlegend=False
-        ),
-        row=row, col=col
-    )
-
-fig.update_layout(
-    height=800,
-    width=1000,
-    title_text="Seasonal Variation of SWC for FR-Hes",
-    showlegend=True
-)
-
-for i in range(1, 5):
-    fig.update_xaxes(title_text="Month", row=(i-1)//2+1, col=(i-1)%2+1, tickvals=list(range(1, 13)), ticktext=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'])
-    fig.update_yaxes(title_text="SWC (%)", row=(i-1)//2+1, col=(i-1)%2+1)
-
-fig.show()
-```
+REDO THESE SEASNAL VARIATION PLOTS
 DO THE SAME FOR RECO
 
 

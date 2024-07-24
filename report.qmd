@@ -682,7 +682,7 @@ swc_reco_metrics_df.reset_index(inplace=True)
 swc_reco_metrics_df.rename(columns={'index': 'station'}, inplace=True)
 
 # Extract location and level from station names in metrics_df
-swc_reco_metrics_df[['location', 'level']] = metrics_df['station'].str.split('_', expand=True)
+swc_reco_metrics_df[['location', 'level']] = swc_reco_metrics_df['station'].str.split('_', expand=True)
 
 # Merge location data with your metrics
 merged_df = swc_reco_metrics_df.merge(df, on='location', how='left')

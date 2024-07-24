@@ -60,7 +60,7 @@ import math
 # plotting libraries
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go # interactive plots
-from plotly.subplots import make_subplots
+from plotly.subplots import make_subplots # for dropdown menu options!
 import matplotlib.dates as mdates
 import datetime
 from datetime import datetime
@@ -793,10 +793,8 @@ fig.show()
 Here is a table of the results, too:
 
 ```{python}
-numeric_columns = ['correlation', 'r_squared', 'slope', 'intercept']
-swc_reco_metrics_df[numeric_columns] = swc_reco_metrics_df[numeric_columns].round(3)
-swc_reco_metrics_df = swc_reco_metrics_df.sort_values('station')
-print(metrics_df.to_markdown(index=False))
+
+### place holder code block
 ```
 
 

@@ -42,6 +42,8 @@ RECO is the total respiration from plants, animals, and microorganisms. It is a 
 
 What makes this dataset in particular interesting is the levels in the SWC dataset. The SWC is measured at 4 different depts in the soil (suurface, 0.3m, 0.5m, and 1m below). While I didnt get too much time to look at this in this project, a goal is to look at the behaviour of SWC at 4 levels, and look for example for cross correlation in that data.  In this project, I did look at the regression metrics between RECO and SWC at different levels and different stations, to get a sense of their relationship. I also looked at the seasonal variation of the different stations and different levels. 
 
+I chose also to look at the lograrithm of the RECO variable. WRITE WHY
+
 This analysis aims to explore the relationship between SWC and RECO across various stations and levels. By examining these variables together, we can gain insights into how water availability influences carbon fluxes and overall ecosystem functioning.
 
 ## Setting up the functions to run the analysis
@@ -668,7 +670,7 @@ fig.show()
 This map shows the locations ADD TO THIS . This is done for visualisation purposes. 
 
 
-I now visualise the results of the metric calculations. The visual representation on a map creates an instructive first look at the potential patterns in the data. The full table of the regression metrics between the levels in SWC stations, and te RECO can be found in the following table. 
+I now visualise the results of the metric calculations. The visual representation on a map creates an instructive first look at the potential patterns in the data. 
 
 ```{python}
 
@@ -750,8 +752,8 @@ Here is a table of the results, too:
 
 ```{python}
 numeric_columns = ['correlation', 'r_squared', 'slope', 'intercept']
-metrics_df[numeric_columns] = metrics_df[numeric_columns].round(3)
-metrics_df = metrics_df.sort_values('station')
+swc_reco_metrics_df[numeric_columns] = swc_reco_metrics_df[numeric_columns].round(3)
+swc_reco_metrics_df = swc_reco_metrics_df.sort_values('station')
 print(metrics_df.to_markdown(index=False))
 ```
 

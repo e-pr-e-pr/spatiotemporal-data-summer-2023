@@ -1,11 +1,11 @@
 ---
 title: "Soil Water Content and Ecosystem Respiration Analysis"
-name:  "**Eleanor Percy-Rouhaud**"  
+author:  "**Eleanor Percy-Rouhaud**"  
 subtitle: "Matriculation Number: 3749872"
 format:
   html:
     code-fold: true
-    css: custom.css
+    css: /app/custom.css
 jupyter: python3
 execute:
   echo: true

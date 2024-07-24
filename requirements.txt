@@ -4,3 +4,4 @@ plotly
 quarto
 matplotlib
 datetime
+tabulate

@@ -1,6 +1,6 @@
 ---
 title: "Soil Water Content and Ecosystem Respiration Analysis"
-author:  "**Eleanor Percy-Rouhaud**"  
+name:  "**Eleanor Percy-Rouhaud**"  
 subtitle: "Matriculation Number: 3749872"
 format:
   html:
@@ -54,6 +54,11 @@ This analysis aims to explore the relationship between SWC and RECO across vario
 First, lets import the modules we will need to complete the analysis:
 
 ```{python}
+
+''' 
+This is a function to ...
+
+'''
 # data access and manipulation modules
 import pandas as pd 
 import numpy as np
@@ -86,6 +91,18 @@ The function below takes the datasets to be analysed, here SWC and RECO, and put
 
 ```{python}
 def process_data_files(directory):
+    '''
+    Description:
+        This function essentially does xyz and returns abc. It is used later for purposes lmnop.
+
+    Parameters:
+        directory - A directory from which the files will be read in
+
+    Return:
+        data_dict - A dictionary of the file contents
+    '''
+
+
     data_dict = {}
     for file in os.listdir(directory):
         file_path = os.path.join(directory, file)
@@ -424,6 +441,23 @@ The following function creates an interactive plot of the seasonal variation of 
 
 # Function to create a seasonal plot for a station
 def create_seasonal_plot(df, station):
+
+    '''
+    Description:
+        - This is abc xzy
+
+    Function Structure:
+        - 1) Step 1
+        - 2) Step 2
+
+    Parameters:
+        - df
+        - station
+
+    Return:
+
+    '''
+    # Step 1: 
     # Group by month and calculate mean and standard deviation
     monthly_data = df[df['station'] == station].groupby('month')['data'].agg(['mean', 'std']).reset_index()
     
@@ -943,6 +977,8 @@ We can now look at te temporal evolution of SWC and RECO at the different statio
 
 Again, this is an interactive plot set up featuring a drop down menu, for space saving reasons. 
 
+CHANGE BLUE TO HOT PINK IN THIS PLOT TIMESERIES
+
 ```{python}
 def create_timeseries_plot(data, data_type):
     # Extract unique stations from the keys
@@ -1259,7 +1295,9 @@ create_seasonal_plot_single_level(reco_swc_filtered, 'reco')
 REDO THESE SEASNAL VARIATION PLOTS
 DO THE SAME FOR RECO
 
+smth like we observe a general trend of the data in northern europe being ..... however, there is an outlier in ... which is interesting. this difference could be accounted for by considering .... More data and research is needed to confirm this. 
 
+also about guyana station - SWC consistencies with depth
 
 
 ## Outlook 

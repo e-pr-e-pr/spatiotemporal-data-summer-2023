@@ -610,7 +610,7 @@ df_filtered.to_csv(output_csv_file_path, index=False)
 print(f"Filtered CSV file has been saved to {output_csv_file_path}")
 ```
 
-Using this freshly filtered dataset, lets plot the locations on a really nice, interactive plot. You can zoom in and out here, and hover over a point to see the name!
+Here are all the possible stations we could look at with the datasets available:
 
 ```{python}
 
@@ -642,7 +642,7 @@ fig = go.Figure(data=go.Scattergeo(
 # layout for a world map with just outlines
 fig.update_layout(
     title = dict(
-        text = 'FLUXNET Station Locations',
+        text = 'FLUXNET Station Locations (all levels present in dataset)',
         x = 0.5,  # this centres the title
         y = 0.95  # and this moves it down a little so its not touching the top
     ),
@@ -667,6 +667,72 @@ fig.update_layout(
     width = 1000,  # width of the figure
     height = 600,  # height of the figure
     margin = dict(l=0, r=0, t=30, b=0)  # reduce margins on sides
+)
+
+fig.show()
+```
+So it filtered for the stations present in the data, now I want to filter for stations with only 4 levels. I kept them as seperate datasets, and didn't go straight in for this filtering because I also need at other points in this project (not displayed in this report)  the data for all the stations, not just those with 4 levels of data. 
+
+Using this freshly filtered dataset, lets plot the locations on a really nice, interactive plot. You can zoom in and out here, and hover over a point to see the name!
+```{python}
+
+# Extract unique station names from swc_filtered keys
+stations_in_swc = set(key.split('_')[0] for key in swc_filtered.keys())
+
+# Load the location file
+df = pd.read_csv(filtered_station_locations)
+
+# Filter the dataframe to include only the stations in swc_filtered
+df_filtered = df[df['station'].isin(stations_in_swc)]
+
+# Ensure latitude and longitude are numeric
+df_filtered['lat'] = pd.to_numeric(df_filtered['lat'], errors='coerce')
+df_filtered['lon'] = pd.to_numeric(df_filtered['lon'], errors='coerce')
+
+# Create the map
+fig = go.Figure(data=go.Scattergeo(
+    lon = df_filtered['lon'],
+    lat = df_filtered['lat'],
+    text = df_filtered['station'],  
+    mode = 'markers',
+    marker = dict(
+        size = 8,  # Increased size for better visibility
+        color = 'red',
+        line = dict(
+            width = 1,
+            color = 'rgba(68, 68, 68, 0)'
+        )
+    )
+))
+
+# Layout for a world map with just outlines
+fig.update_layout(
+    title = dict(
+        text = 'FLUXNET Station Locations (where only 4 levels are present)',
+        x = 0.5,
+        y = 0.95
+    ),
+    geo = dict(
+        showland = True,
+        showcoastlines = True,
+        showcountries = True,
+        countrycolor = 'rgb(204, 204, 204)',
+        coastlinecolor = 'rgb(204, 204, 204)',
+        landcolor = 'rgb(255, 255, 255)',
+        projection_type = 'natural earth',
+        showocean = True,
+        oceancolor = 'rgb(255, 255, 255)',
+        showframe = False,
+        lonaxis = dict(
+            range = [-180, 180],
+        ),
+        lataxis = dict(
+            range = [-90, 90],
+        ),
+    ),
+    width = 1000,
+    height = 600,
+    margin = dict(l=0, r=0, t=30, b=0)
 )
 
 fig.show()
@@ -896,32 +962,47 @@ Again, this is an interactive plot set up featuring a drop down menu, for space 
 ```{python}
 def create_timeseries_plot(data, data_type):
     # Extract unique stations from the keys
-    stations = list(set([key.split('_')[0] for key in data.keys()]))
+    if data_type == 'swc':
+        stations = list(set([key.split('_')[0] for key in data.keys()]))
+    else:
+        stations = list(data.keys())
     
     # Create the figure
     fig = go.Figure()
 
     # Create traces for each station (initially hidden)
     for station in stations:
-        for level in ['l1', 'l2', 'l3', 'l4']:
-            key = f"{station}_{data_type}_{level}"
-            if key in data:
-                fig.add_trace(go.Scatter(
-                    x=data[key]['time'],
-                    y=data[key]['data'],
-                    mode='lines',
-                    name=f'{level}',
-                    visible=False
-                ))
+        if data_type == 'swc':
+            for level in ['l1', 'l2', 'l3', 'l4']:
+                key = f"{station}_{data_type}_{level}"
+                if key in data:
+                    fig.add_trace(go.Scatter(
+                        x=data[key]['time'],
+                        y=data[key]['data'],
+                        mode='lines',
+                        name=f'{level}',
+                        visible=False
+                    ))
+        else:
+            fig.add_trace(go.Scatter(
+                x=data[station]['time'],
+                y=data[station]['data'],
+                mode='lines',
+                name=station,
+                visible=False
+            ))
 
     # Create and add dropdown menu
     dropdown_buttons = []
     for i, station in enumerate(stations):
         visible = [False] * len(fig.data)
-        start_idx = i * 4
-        for j in range(4):  # 4 levels per station
-            if start_idx + j < len(fig.data):
-                visible[start_idx + j] = True
+        if data_type == 'swc':
+            start_idx = i * 4
+            for j in range(4):  # 4 levels per station
+                if start_idx + j < len(fig.data):
+                    visible[start_idx + j] = True
+        else:
+            visible[i] = True
         
         dropdown_buttons.append(dict(
             label=station,
@@ -950,11 +1031,13 @@ def create_timeseries_plot(data, data_type):
     )
 
     # Make the first station visible by default
-    for i in range(min(4, len(fig.data))):
-        fig.data[i].visible = True
+    if data_type == 'swc':
+        for i in range(min(4, len(fig.data))):
+            fig.data[i].visible = True
+    else:
+        fig.data[0].visible = True
 
     return fig
-
 # Create plots for each dataset
 create_timeseries_plot(swc_filtered, 'swc')
 ```
@@ -966,21 +1049,217 @@ And here is the RECO time series:
 create_timeseries_plot(reco_swc_filtered, 'reco')
 ```
 
-And for logRECO, just to see what going on there: 
-
-
-```{python}
-#| eval: true
-#| echo: false
-create_timeseries_plot(logreco_swc_filtered, 'reco')
-```
-
+I recommend looking at DE-HoH for a nice example of a a clean plot with the 4 levels well represented. 
 
 TALK A BIT ABOUT THE TEMP EVOL PLOTS
 mention the lines in it
 
 These plots are very messy, and a lot of them feature sections with very flat lines. These are simply points where, for a period of time, data at that level was not recorded for whatever reason. Even though this raw data is quite messy, we can still see 2 interesting things - the beaviour of SWC at different depths, and, in many cases, a strong seasonality. So then decided to look at the seasonal trends. Again, I wasnt able to create the plots in the way I wanted to for this (it would have been many many pages long), so I have included here 2 example plots. I chose the stations FR-Hes, and ANOTHER, since the have a long time series, and so are the most optimal for demonstrating seasonal variation with this dataset. However, it is not so bad, since they are 'just' visualisations, and the meaningful numbers can b
 
+DESCRIBE WHAT THE FUNCTION DOES
+
+```{python}
+
+#| eval: true
+#| echo: false
+def create_seasonal_plot_multi_level(data, data_type):
+    stations = list(set([key.split('_')[0] for key in data.keys()]))
+    
+    fig = make_subplots(rows=4, cols=1, subplot_titles=("Level 1", "Level 2", "Level 3", "Level 4"),
+                        shared_xaxes=True, vertical_spacing=0.05)
+    levels = ['l1', 'l2', 'l3', 'l4']
+
+    for station in stations:
+        for i, level in enumerate(levels):
+            key = f"{station}_{data_type}_{level}"
+            if key in data:
+                df = pd.DataFrame({
+                    'time': pd.to_datetime(data[key]['time']),
+                    'value': data[key]['data']
+                })
+                df['month'] = df['time'].dt.month
+                df = df.dropna(subset=['value'])
+
+                monthly_stats = df.groupby('month')['value'].agg(['mean', 'std']).reset_index()
+
+                # Plot mean line
+                fig.add_trace(go.Scatter(
+                    x=monthly_stats['month'],
+                    y=monthly_stats['mean'],
+                    mode='lines+markers',
+                    name=f'{station} - Mean',
+                    line=dict(color='blue', width=2),
+                    visible=False
+                ), row=i+1, col=1)
+
+                # Add error bars
+                fig.add_trace(go.Scatter(
+                    x=monthly_stats['month'],
+                    y=monthly_stats['mean'],
+                    error_y=dict(
+                        type='data',
+                        array=monthly_stats['std'],
+                        visible=True
+                    ),
+                    mode='markers',
+                    marker=dict(color='red', size=8),
+                    name=f'{station} - Std Dev',
+                    showlegend=False,
+                    visible=False
+                ), row=i+1, col=1)
+
+    # Create dropdown menu
+    dropdown_buttons = []
+    for i, station in enumerate(stations):
+        visible = [False] * len(fig.data)
+        for j in range(8):  # 4 levels * 2 traces per level
+            if i*8 + j < len(fig.data):
+                visible[i*8 + j] = True
+        
+        dropdown_buttons.append(dict(
+            label=station,
+            method='update',
+            args=[{'visible': visible},
+                  {'title': f'Seasonal Variation of {data_type.upper()} for Station {station}'}]
+        ))
+
+    fig.update_layout(
+        height=1000,
+        title_text=f"Seasonal Variation of {data_type.upper()}",
+        showlegend=True,
+        updatemenus=[dict(
+            active=0,
+            buttons=dropdown_buttons,
+            direction="down",
+            pad={"r": 10, "t": 10},
+            showactive=True,
+            x=0.1,
+            xanchor="left",
+            y=1.15,
+            yanchor="top"
+        )],
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        )
+    )
+
+    fig.update_xaxes(title_text="Month", row=4, col=1, tickmode='array', tickvals=list(range(1, 13)))
+    for i in range(1, 5):
+        fig.update_yaxes(title_text=f"SWC - Level {i}", row=i, col=1)
+
+    # Make the first station visible by default
+    for i in range(min(8, len(fig.data))):
+        fig.data[i].visible = True
+
+    return fig
+
+def create_seasonal_plot_single_level(data, data_type):
+    # Extract unique station prefixes
+    stations = list(set([key.split('_')[0] for key in data.keys()]))
+    
+    fig = go.Figure()
+
+    for station in stations:
+        # Find the first key that matches this station prefix
+        station_key = next(key for key in data.keys() if key.startswith(station))
+        
+        df = pd.DataFrame({
+            'time': pd.to_datetime(data[station_key]['time']),
+            'value': data[station_key]['data']
+        })
+        df['month'] = df['time'].dt.month
+        df = df.dropna(subset=['value'])
+
+        monthly_stats = df.groupby('month')['value'].agg(['mean', 'std']).reset_index()
+
+        # Plot mean line
+        fig.add_trace(go.Scatter(
+            x=monthly_stats['month'],
+            y=monthly_stats['mean'],
+            mode='lines+markers',
+            name=f'{station} - Mean',
+            line=dict(color='blue', width=2),
+            visible=False
+        ))
+
+        # Add error bars
+        fig.add_trace(go.Scatter(
+            x=monthly_stats['month'],
+            y=monthly_stats['mean'],
+            error_y=dict(
+                type='data',
+                array=monthly_stats['std'],
+                visible=True
+            ),
+            mode='markers',
+            marker=dict(color='red', size=8),
+            name=f'{station} - Std Dev',
+            visible=False
+        ))
+
+    # Create dropdown menu
+    dropdown_buttons = []
+    for i, station in enumerate(stations):
+        visible = [False] * len(fig.data)
+        visible[i*2] = True
+        visible[i*2 + 1] = True
+        
+        dropdown_buttons.append(dict(
+            label=station,
+            method='update',
+            args=[{'visible': visible},
+                  {'title': f'Seasonal Variation of {data_type.upper()} for Station {station}'}]
+        ))
+
+    fig.update_layout(
+        height=600,
+        title_text=f"Seasonal Variation of {data_type.upper()}",
+        showlegend=True,
+        updatemenus=[dict(
+            active=0,
+            buttons=dropdown_buttons,
+            direction="down",
+            pad={"r": 10, "t": 10},
+            showactive=True,
+            x=0.1,
+            xanchor="left",
+            y=1.15,
+            yanchor="top"
+        )],
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        )
+    )
+
+    fig.update_xaxes(title_text="Month", tickmode='array', tickvals=list(range(1, 13)))
+    fig.update_yaxes(title_text=f"{data_type.upper()}")
+
+    # Make the first station visible by default
+    if len(fig.data) > 0:
+        fig.data[0].visible = True
+        fig.data[1].visible = True
+
+    return fig
+
+```
+
+
+```{python}
+create_seasonal_plot_multi_level(swc_filtered, 'swc')
+```
+
+```{python}
+create_seasonal_plot_single_level(reco_swc_filtered, 'reco')
+
+```
 
 REDO THESE SEASNAL VARIATION PLOTS
 DO THE SAME FOR RECO

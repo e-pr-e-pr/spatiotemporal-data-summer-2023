@@ -671,33 +671,11 @@ fig.show()
 This map shows the locations ADD TO THIS . This is done for visualisation purposes. 
 
 
-I now visualise the results of the metric calculations. The visual representation on a map creates an instructive first look at the potential patterns in the data. 
+I now visualise the results of the metric calculations. The visual representation on a map creates an instructive first look at the potential patterns in the data. Ive displayed it as a dropdown menu, to save some space on the page, and to easily find the variable one might be interested in. 
 
 ```{python}
 
-# Load station locations
-station_locations_df = pd.read_csv(filtered_station_locations)
-
-
-# Transform the dictionary into a DataFrame
-data = []
-for key, value in swc_reco_four_levels_metrics.items():
-    level = key.split('_')[1]
-    for station, metrics in value.items():
-        row = {'station': station, 'level': level}
-        row.update(metrics)
-        data.append(row)
-
-swc_reco_metrics_df = pd.DataFrame(data)
-
-
-# Merge location data with your metrics based on the station name
-swc_reco_merged_df = swc_reco_metrics_df.merge(station_locations_df, on='station', how='left')
-
-
-
-
-def create_world_map(df, metrics, levels):
+def create_world_correlation_map(df, metrics, levels, data_type): # for now, ave to manually type in the variable for the title. want to imrove this to be dynamic later.
     fig = make_subplots(rows=1, cols=1, specs=[[{'type': 'scattergeo'}]])
 
     # Create a base layer with all data points
@@ -723,7 +701,7 @@ def create_world_map(df, metrics, levels):
                     color = level_data[metric],
                     colorscale = 'Viridis',
                     showscale = True,
-                    colorbar_title = metric
+                  #  colorbar_title = metric
                 ),
                 name = f'{metric} - Level {level}',
                 visible = False  # Start with all traces hidden
@@ -744,9 +722,12 @@ def create_world_map(df, metrics, levels):
                     label = f'{metric.capitalize()} - Level {level}',
                     method = 'update',
                     args = [{'visible': visible},
-                            {'title': f'{metric.capitalize()} between SWC and RECO for Level {level}, all stations'}]
+                            {'annotations[1].text': f'{metric.capitalize()} between SWC and {data_type} for Level {level}, all stations'}]
                 )
             )
+
+    # Set the initial title
+    initial_title = f'{metrics[0].capitalize()} between SWC and {data_type} for Level {levels[0]}, all stations'
 
     fig.update_layout(
         updatemenus=[dict(
@@ -755,49 +736,126 @@ def create_world_map(df, metrics, levels):
             direction="down",
             pad={"r": 10, "t": 10},
             showactive=True,
-            x=0.1,
-            xanchor="left",
-            y=1.1,
+            x=1,
+            xanchor="right",
+            y=1.15,  # Position the dropdown menu
             yanchor="top"
         )],
-        geo = dict(
-            showland = True,
-            showcountries = True,
-            showocean = True,
-            countrywidth = 0.5,
-            landcolor = 'rgb(243, 243, 243)',
-            oceancolor = 'rgb(230, 230, 250)',
-            projection_type = 'natural earth',
-            showcoastlines = True,
-            coastlinecolor = "RebeccaPurple",
-            showframe = False,
+        geo=dict(
+            showland=True,
+            showcountries=True,
+            showocean=True,
+            countrywidth=0.5,
+            landcolor='rgb(243, 243, 243)',
+            oceancolor='rgb(230, 230, 250)',
+            projection_type='natural earth',
+            showcoastlines=True,
+            coastlinecolor="RebeccaPurple",
+            showframe=False,
             lonaxis=dict(showgrid=False),
             lataxis=dict(showgrid=False)
         ),
-        autosize=True,
-        width=800,
-        height=500,
-        margin=dict(l=0, r=0, t=50, b=0)
+        autosize=False,
+        width=900,
+        height=600,  # Increased height to accommodate title and dropdown
+        margin=dict(l=0, r=0, t=150, b=0)  # Increased top margin for title and dropdown
+    )
+    
+    # Add annotations for dropdown label and title
+    fig.add_annotation(
+        text="Select Metric and Level:",
+        xref="paper", yref="paper",
+        x=0.3, y=1.12,  # Position for dropdown label
+        showarrow=False,
+        font=dict(size=14)
+    )
+    
+    fig.add_annotation(
+        text=initial_title,
+        xref="paper", yref="paper",
+        x=0.5, y=1.06,  # Position for title
+        showarrow=False,
+        font=dict(size=16, color="black"),
+        align="center"
     )
     
     return fig
+# Load station locations
+station_locations_df = pd.read_csv(filtered_station_locations)
+
+
+# Transform the dictionary into a DataFrame
+data = []
+for key, value in swc_reco_four_levels_metrics.items():
+    level = key.split('_')[1]
+    for station, metrics in value.items():
+        row = {'station': station, 'level': level}
+        row.update(metrics)
+        data.append(row)
+
+swc_reco_metrics_df = pd.DataFrame(data)
+
+
+# Merge location data with your metrics based on the station name
+swc_reco_merged_df = swc_reco_metrics_df.merge(station_locations_df, on='station', how='left'
 
 # Create the figure
 metrics = ['correlation_coefficient', 'r_squared', 'slope', 'intercept']
 levels = ['l1', 'l2', 'l3', 'l4']
 
-fig = create_world_map(swc_reco_merged_df, metrics, levels)
+fig = create_world_correlation_map(swc_reco_merged_df, metrics, levels, 'RECO')
 fig.show()
 
 ```
+And here is the same plot but with the logRECO and SWC regression calculations: 
+```{python}
 
-Here is a table of the results, too:
+# Load station locations
+station_locations_df = pd.read_csv(filtered_station_locations)
+
+
+# Transform the dictionary into a DataFrame
+data = []
+for key, value in swc_logreco_four_levels_metrics.items():
+    level = key.split('_')[1]
+    for station, metrics in value.items():
+        row = {'station': station, 'level': level}
+        row.update(metrics)
+        data.append(row)
+
+swc_logreco_metrics_df = pd.DataFrame(data)
+
+
+# Merge location data with your metrics based on the station name
+swc_logreco_merged_df = swc_logreco_metrics_df.merge(station_locations_df, on='station', how='left')
+
+
+
+# Create the figure
+metrics = ['correlation_coefficient', 'r_squared', 'slope', 'intercept']
+levels = ['l1', 'l2', 'l3', 'l4']
+
+fig = create_world_correlation_map(swc_logreco_merged_df, metrics, levels, 'logRECO')
+fig.show()
+```
+
+Here is a table of the results of the regression metrics between SWC and RECO, too:
+
+```{python}
+swc_reco_metrics_df = swc_reco_metrics_df.sort_values('station')
+numeric_columns = ['correlation_coefficient', 'r_squared', 'slope', 'intercept']
+swc_reco_metrics_df[numeric_columns] = swc_reco_metrics_df[numeric_columns].round(3)
+markdown_table = swc_reco_metrics_df.to_markdown(index=False)
+print(markdown_table)
+```
+
+And the same for SWC and logRECO:
 
 ```{python}
 numeric_columns = ['correlation_coefficient', 'r_squared', 'slope', 'intercept']
-swc_reco_metrics_df[numeric_columns] = swc_reco_metrics_df[numeric_columns].round(3)
-swc_reco_metrics_df = swc_reco_metrics_df.sort_values('station')
-print(swc_reco_metrics_df.to_markdown(index=False))
+swc_logreco_metrics_df[numeric_columns] = swc_logreco_metrics_df[numeric_columns].round(3)
+swc_logreco_metrics_df = swc_logreco_metrics_df.sort_values('station')
+print(swc_logreco_metrics_df.to_markdown(index=False))
 ```
 
 

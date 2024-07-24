@@ -695,27 +695,70 @@ swc_reco_merged_df = swc_reco_metrics_df.merge(station_locations_df, on='station
 
 
 
-print(swc_reco_merged_df.head())
 
-def create_world_map(df, metric, level):
-    level_data = df[df['level'] == level]
-    
-    fig = go.Figure(data=go.Scattergeo(
-        lon = level_data['lon'],  # Use 'lon' for longitude
-        lat = level_data['lat'],  # Use 'lat' for latitude
-        text = level_data['station'] + '<br>' + metric + ': ' + level_data[metric].round(3).astype(str),
+def create_world_map(df, metrics, levels):
+    fig = make_subplots(rows=1, cols=1, specs=[[{'type': 'scattergeo'}]])
+
+    # Create a base layer with all data points
+    fig.add_trace(go.Scattergeo(
+        lon = df['lon'],
+        lat = df['lat'],
         mode = 'markers',
-        marker = dict(
-            size = 8,
-            color = level_data[metric],
-            colorscale = 'Viridis',
-            showscale = True,
-            colorbar_title = metric
-        )
+        marker = dict(size = 8, color = 'lightgrey'),
+        showlegend = False
     ))
 
+    # Create traces for each combination of metric and level
+    for metric in metrics:
+        for level in levels:
+            level_data = df[df['level'] == level]
+            fig.add_trace(go.Scattergeo(
+                lon = level_data['lon'],
+                lat = level_data['lat'],
+                text = level_data['station'] + '<br>' + metric + ': ' + level_data[metric].round(3).astype(str),
+                mode = 'markers',
+                marker = dict(
+                    size = 8,
+                    color = level_data[metric],
+                    colorscale = 'Viridis',
+                    showscale = True,
+                    colorbar_title = metric
+                ),
+                name = f'{metric} - Level {level}',
+                visible = False  # Start with all traces hidden
+            ))
+
+    # Make the first trace visible
+    fig.data[1].visible = True
+
+    # Create dropdown menu
+    dropdown_buttons = []
+    for i, metric in enumerate(metrics):
+        for j, level in enumerate(levels):
+            visible = [False] * len(fig.data)
+            visible[0] = True  # Base layer always visible
+            visible[1 + i*len(levels) + j] = True  # Make the selected trace visible
+            dropdown_buttons.append(
+                dict(
+                    label = f'{metric.capitalize()} - Level {level}',
+                    method = 'update',
+                    args = [{'visible': visible},
+                            {'title': f'{metric.capitalize()} between SWC and RECO for Level {level}, all stations'}]
+                )
+            )
+
     fig.update_layout(
-        title = f'{metric.capitalize()} between SWC and RECO for Level {level}, all station',
+        updatemenus=[dict(
+            active=0,
+            buttons=dropdown_buttons,
+            direction="down",
+            pad={"r": 10, "t": 10},
+            showactive=True,
+            x=0.1,
+            xanchor="left",
+            y=1.1,
+            yanchor="top"
+        )],
         geo = dict(
             showland = True,
             showcountries = True,
@@ -723,28 +766,27 @@ def create_world_map(df, metric, level):
             countrywidth = 0.5,
             landcolor = 'rgb(243, 243, 243)',
             oceancolor = 'rgb(230, 230, 250)',
-            projection_type = 'natural earth',  # Use a natural earth projection for a nicer look
+            projection_type = 'natural earth',
             showcoastlines = True,
             coastlinecolor = "RebeccaPurple",
             showframe = False,
-            lonaxis=dict(showgrid=False),  # Turn off longitude gridlines
-            lataxis=dict(showgrid=False)   # Turn off latitude gridlines
+            lonaxis=dict(showgrid=False),
+            lataxis=dict(showgrid=False)
         ),
-        autosize=True,  # Allow the figure to resize automatically
-        width=800,  # Set width
-        height=500,  # Set height
-        margin=dict(l=0, r=0, t=30, b=0)  # Adjust margins to reduce white space
+        autosize=True,
+        width=800,
+        height=500,
+        margin=dict(l=0, r=0, t=50, b=0)
     )
     
     return fig
 
+# Create the figure
 metrics = ['correlation_coefficient', 'r_squared', 'slope', 'intercept']
 levels = ['l1', 'l2', 'l3', 'l4']
 
-for metric in metrics:
-    for level in levels:
-        fig = create_world_map(swc_reco_merged_df, metric, level)
-        fig.show()
+fig = create_world_map(swc_reco_merged_df, metrics, levels)
+fig.show()
 
 ```
 

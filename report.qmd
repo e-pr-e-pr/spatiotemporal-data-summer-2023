@@ -1,8 +1,8 @@
 ---
 title: "Soil Water Content and Ecosystem Respiration Analysis"
-author: |
-  "**Eleanor Percy-Rouhaud**"  
-  "Matriculation Number: 3749872"
+author: 
+  name: "**Eleanor Percy-Rouhaud**"  
+  subtitle: "Matriculation Number: 3749872"
 format:
   html:
     code-fold: true

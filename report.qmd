@@ -671,28 +671,36 @@ This map shows the locations ADD TO THIS . This is done for visualisation purpos
 I now visualise the results of the metric calculations. The visual representation on a map creates an instructive first look at the potential patterns in the data. The full table of the regression metrics between the levels in SWC stations, and te RECO can be found in the following table. 
 
 ```{python}
+
 # Load station locations
-df = pd.read_csv(filtered_station_locations)
+station_locations_df = pd.read_csv(filtered_station_locations)
+
+
+# Transform the dictionary into a DataFrame
+data = []
+for key, value in swc_reco_four_levels_metrics.items():
+    level = key.split('_')[1]
+    for station, metrics in value.items():
+        row = {'station': station, 'level': level}
+        row.update(metrics)
+        data.append(row)
+
+swc_reco_metrics_df = pd.DataFrame(data)
+
+
+# Merge location data with your metrics based on the station name
+swc_reco_merged_df = swc_reco_metrics_df.merge(station_locations_df, on='station', how='left')
 
 
 
-# Convert metrics dictionary to DataFrame
-swc_reco_metrics_df = pd.DataFrame.from_dict(swc_reco_four_levels_metrics, orient='index')
-swc_reco_metrics_df.reset_index(inplace=True)
-swc_reco_metrics_df.rename(columns={'index': 'station'}, inplace=True)
-
-# Extract location and level from station names in metrics_df
-swc_reco_metrics_df[['location', 'level']] = swc_reco_metrics_df['station'].str.split('_', expand=True)
-
-# Merge location data with your metrics
-merged_df = swc_reco_metrics_df.merge(df, on='location', how='left')
+print(swc_reco_merged_df.head())
 
 def create_world_map(df, metric, level):
     level_data = df[df['level'] == level]
     
     fig = go.Figure(data=go.Scattergeo(
-        lon = level_data['longitude'],
-        lat = level_data['latitude'],
+        lon = level_data['lon'],  # Use 'lon' for longitude
+        lat = level_data['lat'],  # Use 'lat' for latitude
         text = level_data['station'] + '<br>' + metric + ': ' + level_data[metric].round(3).astype(str),
         mode = 'markers',
         marker = dict(
@@ -705,7 +713,7 @@ def create_world_map(df, metric, level):
     ))
 
     fig.update_layout(
-        title = f'{metric.capitalize()} for Level {level}',
+        title = f'{metric.capitalize()} between SWC and RECO for Level {level}, all station',
         geo = dict(
             showland = True,
             showcountries = True,
@@ -713,18 +721,29 @@ def create_world_map(df, metric, level):
             countrywidth = 0.5,
             landcolor = 'rgb(243, 243, 243)',
             oceancolor = 'rgb(230, 230, 250)',
-        )
+            projection_type = 'natural earth',  # Use a natural earth projection for a nicer look
+            showcoastlines = True,
+            coastlinecolor = "RebeccaPurple",
+            showframe = False,
+            lonaxis=dict(showgrid=False),  # Turn off longitude gridlines
+            lataxis=dict(showgrid=False)   # Turn off latitude gridlines
+        ),
+        autosize=True,  # Allow the figure to resize automatically
+        width=800,  # Set width
+        height=500,  # Set height
+        margin=dict(l=0, r=0, t=30, b=0)  # Adjust margins to reduce white space
     )
     
     return fig
 
-metrics = ['correlation', 'r_squared', 'slope', 'intercept']
+metrics = ['correlation_coefficient', 'r_squared', 'slope', 'intercept']
 levels = ['l1', 'l2', 'l3', 'l4']
 
 for metric in metrics:
     for level in levels:
-        fig = create_world_map(merged_df, metric, level)
+        fig = create_world_map(swc_reco_merged_df, metric, level)
         fig.show()
+
 ```
 
 Here is a table of the results, too:

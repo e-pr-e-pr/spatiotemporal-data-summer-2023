@@ -668,25 +668,24 @@ fig.show()
 This map shows the locations ADD TO THIS . This is done for visualisation purposes. 
 
 
-I now visualise the results of the metric calculations. The visual representation on a map creates an instructive first look at the potential patterns in the data. The full table of the regression metrics between the levels in SWC stations, and te RECO can be found in the following table. The following plot is an example of a visual representation one could do to visual spatial patterns. (I tried to get it to work for all stations, but the loops and functions required just were not working for me :( )
+I now visualise the results of the metric calculations. The visual representation on a map creates an instructive first look at the potential patterns in the data. The full table of the regression metrics between the levels in SWC stations, and te RECO can be found in the following table. 
 
 ```{python}
 # Load station locations
 df = pd.read_csv(filtered_station_locations)
 
-# Load your metrics data
-swc_reco_four_levels_metrics = {...}  # Your dictionary data
+
 
 # Convert metrics dictionary to DataFrame
-metrics_df = pd.DataFrame.from_dict(swc_reco_four_levels_metrics, orient='index')
-metrics_df.reset_index(inplace=True)
-metrics_df.rename(columns={'index': 'station'}, inplace=True)
+swc_reco_metrics_df = pd.DataFrame.from_dict(swc_reco_four_levels_metrics, orient='index')
+swc_reco_metrics_df.reset_index(inplace=True)
+swc_reco_metrics_df.rename(columns={'index': 'station'}, inplace=True)
 
 # Extract location and level from station names in metrics_df
-metrics_df[['location', 'level']] = metrics_df['station'].str.split('_', expand=True)
+swc_reco_metrics_df[['location', 'level']] = metrics_df['station'].str.split('_', expand=True)
 
 # Merge location data with your metrics
-merged_df = metrics_df.merge(df, on='location', how='left')
+merged_df = swc_reco_metrics_df.merge(df, on='location', how='left')
 
 def create_world_map(df, metric, level):
     level_data = df[df['level'] == level]

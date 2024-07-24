@@ -42,7 +42,7 @@ RECO is the total respiration from plants, animals, and microorganisms. It is a 
 
 We know already that there is an inflection point in the soil respiration with temperature - that is to say, both too high and too low temperatures cause soil respiration to decrease. Soil water content shows a similar beaviour. I want to investigate why - perhaps nitrogen content plays a role, or organic matter content. Wich is where RECO comes in .REPRASE THIS. 
 
-Using data also from FLUXNEt, the same exactly aanalysis I have done here can also be done with other climate variables, such as tempoerature, and ground heat flux. The process is the same as here, just with different variables. All this taken together will offer a new look into soil respiration and health. 
+Using data also from FLUXNET, the same exactly aanalysis I have done here can also be done with other climate variables, such as temperature, and ground heat flux. The process is the same as here, just with different variables. All this taken together will offer a new look into soil respiration and health. 
 
 What makes this dataset in particular interesting is the levels in the SWC dataset. The SWC is measured at 4 different depts in the soil (suurface, 0.3m, 0.5m, and 1m below). While I didnt get too much time to look at this in this project, a goal is to look at the behaviour of SWC at 4 levels, and look for example for cross correlation in that data.  In this project, I did look at the regression metrics between RECO and SWC at different levels and different stations, to get a sense of their relationship. I also looked at the seasonal variation of the different stations and different levels. 
 
@@ -846,11 +846,18 @@ fig.show()
 Here is a table of the results of the regression metrics between SWC and RECO, too:
 
 ```{python}
-swc_reco_metrics_df = swc_reco_metrics_df.sort_values('station')
+level_order = ['l1', 'l2', 'l3', 'l4']
+
+swc_reco_metrics_df['level'] = pd.Categorical(swc_reco_metrics_df['level'], categories=level_order, ordered=True) # oterwise prints the table in a really topsy turrvy way
+swc_reco_metrics_df = swc_reco_metrics_df.sort_values(['station', 'level'])
+
 numeric_columns = ['correlation_coefficient', 'r_squared', 'slope', 'intercept']
 swc_reco_metrics_df[numeric_columns] = swc_reco_metrics_df[numeric_columns].round(3)
+
 markdown_table = swc_reco_metrics_df.to_markdown(index=False)
+
 print(markdown_table)
+
 ```
 
 And the same for SWC and logRECO:
@@ -882,9 +889,91 @@ TALK A LITTLE ABOUT EACH OF THESE RESULTS
 
 TEMPORAL EVOLUTION
 
-We can now look at te temporal evolution of SWC and RECO at the different stations. This function filters for the stations with only continuous levels present, and plots them - with each plot featuring either 1,2,3, or 4 levels, depending on what was available in the data. The point is that the levels exist consistently across the time series. 
+We can now look at te temporal evolution of SWC and RECO at the different stations. Here I am plotting only the stations I filtered for earlier with 4 levels. Since the dictionaries I use to structure the data have the same structure, you could also use the non filtered data (swc_data_dict, for eaxmple) to see more stations. 
+
+Again, this is an interactive plot set up featuring a drop down menu, for space saving reasons. 
+
+```{python}
+def create_timeseries_plot(data, data_type):
+    # Extract unique stations from the keys
+    stations = list(set([key.split('_')[0] for key in data.keys()]))
+    
+    # Create the figure
+    fig = go.Figure()
+
+    # Create traces for each station (initially hidden)
+    for station in stations:
+        for level in ['l1', 'l2', 'l3', 'l4']:
+            key = f"{station}_{data_type}_{level}"
+            if key in data:
+                fig.add_trace(go.Scatter(
+                    x=data[key]['time'],
+                    y=data[key]['data'],
+                    mode='lines',
+                    name=f'{level}',
+                    visible=False
+                ))
+
+    # Create and add dropdown menu
+    dropdown_buttons = []
+    for i, station in enumerate(stations):
+        visible = [False] * len(fig.data)
+        start_idx = i * 4
+        for j in range(4):  # 4 levels per station
+            if start_idx + j < len(fig.data):
+                visible[start_idx + j] = True
+        
+        dropdown_buttons.append(dict(
+            label=station,
+            method='update',
+            args=[{'visible': visible},
+                  {'title': f'{data_type.upper()} Time Series for Station {station}'}]
+        ))
+
+    fig.update_layout(
+        updatemenus=[dict(
+            active=0,
+            buttons=dropdown_buttons,
+            direction="down",
+            pad={"r": 10, "t": 10},
+            showactive=True,
+            x=0.1,
+            xanchor="left",
+            y=1.15,
+            yanchor="top"
+        )],
+        height=600,
+        title_text=f"Select a Station to view {data_type.upper()} Time Series",
+        title_x=0.5,
+        xaxis_title="Time",
+        yaxis_title=data_type.upper()
+    )
+
+    # Make the first station visible by default
+    for i in range(min(4, len(fig.data))):
+        fig.data[i].visible = True
+
+    return fig
+
+# Create plots for each dataset
+create_timeseries_plot(swc_filtered, 'swc')
+```
+And here is the RECO time series: 
+
+```{python}
+#| eval: true
+#| echo: false
+create_timeseries_plot(reco_swc_filtered, 'reco')
+```
+
+And for logRECO, just to see what going on there: 
 
 
+```{python}
+#| eval: true
+#| echo: false
+create_timeseries_plot(logreco_swc_filtered, 'reco')
+```
 
 
 TALK A BIT ABOUT THE TEMP EVOL PLOTS

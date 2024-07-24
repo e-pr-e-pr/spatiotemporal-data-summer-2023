@@ -6,6 +6,7 @@ author: |
 format:
   html:
     code-fold: true
+    code-tools: true
     css: custom.css
 jupyter: python3
 execute:
@@ -87,8 +88,8 @@ The function below takes the datasets to be analysed, here SWC and RECO, and put
 
 ```{python}
 
-#| eval: false
-#| echo: true
+#| code-fold: true
+
 
 def process_data_files(directory):
     data_dict = {}
@@ -112,6 +113,7 @@ def process_data_files(directory):
   ```
 
 For some variables, it is interesting to take the log of its value; this is what this function does, and it creates a new directionary with the same name + log i.e. log_reco_data_dict.
+
  ```{python}
 
 #| eval: false
@@ -130,6 +132,7 @@ For some variables, it is interesting to take the log of its value; this is what
   The function below takes whichever variables you want - again, here only SWC and RECO - and calculates various regression metrics of them, namely the r sqaured metric, the Pearson correlation coefficient, as well as the linear regression metrics (slope and intercept). 
 
  ```{python}
+#| code-fold: true
 
 #| eval: false
 #| echo: true
@@ -166,6 +169,7 @@ def calculate_regression_metrics(x, y):
 Once the metrics are calculated,  it is necessary to ave them stored somewhere - so here is a function to store them in a dictionary. It extracts the prefix of the station for the first data dictioanry, which indicates its name, and compares it with the prefix from the second data dictionary. If the names match and the data is not empty at that station, then it moves on to the next step - else it throws an error message to alert you of the emoty data. The next step is to ensure we are only calculating the metrics over common time steps,; the data is thus cropped to the later beginning and earlier end of the 2 datasets. The metrics are then stored with astring as the key and the value as the value, and the whole thing is stored in the dictionary that was intialised at the beginning of the function.
 
 ```{python}
+#| code-fold: true
 #| eval: false
 #| echo: true
 

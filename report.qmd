@@ -38,7 +38,11 @@ swc_data_dict = process_data_files(soil_water_data)
 
 This is an analysis of Soil Water Content (SWC) and and Ecosystem Respiration (RECO) data. The variables are important for understanding ecosystem dynamics. SWC is a key component of the hydrological cycle, influencing water availability for plants and soil processes. It directly affects plant growth and productivity, . It also impacts soil structure, microbial activity, and organic matter decomposition. 
 
-RECO is the total respiration from plants, animals, and microorganisms. It is a balance of carbon uptake (photosynthesis) and release (respiration). It can also be viewed as an indicator of ecosystem health.
+RECO is the total respiration from plants, animals, and microorganisms. It is a balance of carbon uptake (photosynthesis) and release (respiration). It can also be viewed as an indicator of ecosystem health. In this project, I am specifically interested in soil respiration, but unfortunately there isnt data I can use that measures only soil respiration, so Iwll start off by using RECO instead - which does include soil respiration, but also plant and animal respiration, too. 
+
+We know already that there is an inflection point in the soil respiration with temperature - that is to say, both too high and too low temperatures cause soil respiration to decrease. Soil water content shows a similar beaviour. I want to investigate why - perhaps nitrogen content plays a role, or organic matter content. Wich is where RECO comes in .REPRASE THIS. 
+
+Using data also from FLUXNEt, the same exactly aanalysis I have done here can also be done with other climate variables, such as tempoerature, and ground heat flux. The process is the same as here, just with different variables. All this taken together will offer a new look into soil respiration and health. 
 
 What makes this dataset in particular interesting is the levels in the SWC dataset. The SWC is measured at 4 different depts in the soil (suurface, 0.3m, 0.5m, and 1m below). While I didnt get too much time to look at this in this project, a goal is to look at the behaviour of SWC at 4 levels, and look for example for cross correlation in that data.  In this project, I did look at the regression metrics between RECO and SWC at different levels and different stations, to get a sense of their relationship. I also looked at the seasonal variation of the different stations and different levels. 
 
@@ -816,7 +820,7 @@ station_locations_df = pd.read_csv(filtered_station_locations)
 
 # Transform the dictionary into a DataFrame
 data = []
-for key, value in swc_logreco_four_levels_metrics.items():
+for key, value in swc_four_levels_logreco_metrics.items():
     level = key.split('_')[1]
     for station, metrics in value.items():
         row = {'station': station, 'level': level}

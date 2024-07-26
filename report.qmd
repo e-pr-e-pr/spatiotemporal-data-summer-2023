@@ -5,7 +5,7 @@ subtitle: "Matriculation Number: 3749872"
 format:
   html:
     code-fold: true
-    css: ./custom.css
+    theme: cosmo
 jupyter: python3
 execute:
   echo: true
@@ -13,23 +13,10 @@ execute:
   warning: false
 ---
 ```{python}
-echo: False
-
+# need to load these first because i have aving some problems with loading them directly in this doc. the are exactly the same as here, just also stored in a seperate document! data_processing_functions.py
 from data_processing_functions import process_data_files, log_transfo_data_dict, metrics_to_csv, filter_level_data_common_time, calculate_regression_metrics, calculate_and_store_all_levels, remove_missing_time_steps, four_levels_filter
 
 import os
-
-# define  data paths
-reco_data = './data/reco/'
-soil_water_data = './data/swc/'
-filtered_station_locations = './data/filtered-fluxnet-station-coords.csv'
-
-# imported functions ready to use
-reco_data_dict = process_data_files(reco_data)
-log_reco_data_dict = log_transfo_data_dict(reco_data_dict)
-swc_data_dict = process_data_files(soil_water_data)
-
-# print("Data processing completed successfully")
 ```
 
 
@@ -108,7 +95,7 @@ soil_water_data = './data/swc/'
 filtered_station_locations = './data/filtered-fluxnet-station-coords.csv'
 ```
 
-I wrote this code to also work with the many other variables and indices available from FLUXNET, so I wrote a lot of functions that can be used for many of them (rather than having to write a fresh code chunk each time). This is what now follows. Explanations of the function follows before each code block. 
+I wrote this code to also work with the many other variables and indices available from FLUXNET, so I wrote a lot of functions that can be used for many of them (rather than having to write a fresh code chunk each time). This is what now follows. Explanations of the function follows before each code block for a quick overview; the functions contain docstrings with more detailed, technical explanations of the functions. You can use the code fold function to see the collapsed code. 
 
 The function below takes the datasets to be analysed, here SWC and RECO, and puts them into a more flexible form for te purposes of analysis and visualisation - a dictionary. The data directly from fluxnet is in the form of individual .txt files for each station. Here, I take these individual files and all their contents, and stitch them together into a dictionary, to be accessed by the station name as a key. 
 
@@ -170,12 +157,12 @@ def log_transfo_data_dict(original_data_dict):
     return log_transformed_dict
 ```
 
+The function below is effectively tidying up the data a bit. It looks at the data that has levels - here SWC - and ensures they have a consistency in the time data. Since I want a consistent time series for this analysis, if some levels have data and others dont - I do not want them in my time series. This function removes those time steps, leaving a dataset with only 'complete' levels of data - i.e. 1, 1-2, 1, 2,3 and 1,2,3,4.
+
 ```{python}
 #| eval: false
 #| echo: true
 #| output: false
-
-
 
 def remove_missing_time_steps(dict1):
     '''
@@ -230,6 +217,8 @@ def remove_missing_time_steps(dict1):
 
     return dict1
 ``` 
+
+Once the inconsistent time steps have been removed, data is then filtered to be only the data with 4 full levels. I kept them as 2 seperate data sets for debugging purposes, and for future use it could be interesting to look only at parrticular levels, not only all 4. The following function filters the data for complete 4 levels, and stores it in a new dictionary:
 
 ```{python}
 #| eval: false
@@ -303,7 +292,7 @@ def four_levels_filter(data_dict, data_name):
 ``` 
 
 
-This function simply ensures that whichever 2 variables you want to play with cover the same period of time - if one i slonger than the other, the longer bit is removed by this function. 
+This function simply ensures that whichever 2 variables you want to play with cover the same period of time - if one is longer than the other, the longer time series is cropped by this function. 
 ```{python}
 #| eval: false
 #| echo: true
@@ -526,7 +515,7 @@ def metrics_to_csv(metrics_dict, name1, name2):
 
     print(f'Successfully saved to {file_path}')
 ```
-The following function plots the results of the above metric claculation visually, on an interactive world map. Please note that I had quite a few problems with the rendering of the images in html - it works fine in my local IDE. So I didnt use this code i n this report due to rendering issues, but it does work when used locally. 
+The following function plots the results of the above metric claculation visually, on an interactive world map. 
 
 ```{python}
 def create_world_correlation_map(df, metrics, levels, data_type): # for now, ave to manually type in the variable for the title. want to imrove this to be dynamic later.
@@ -657,11 +646,7 @@ def create_world_correlation_map(df, metrics, levels, data_type): # for now, ave
     return fig
 ```
 
-
-As briefly mentioned above, the levels feature of the FLUXNET data is very interesting. So, we ave some functions to filter for that. First we need to check that the levels each have the same time step - it could be, that at a particular time step, levels 1,2, and 4 were recorded and not level 3, due to equipment failure for example. In this case, we do not want it, because we want a consistent time series. So we check first for this time step consistency:
-
-Something I want to look at is some patterns between levels and stations, which involes retaining time steps at each station that have data for 4 levels only - not 3, or less. That is what this function is for - to refine the dictionaries to only include the data if it exists in fulll i.e. at all levels. 
-
+The remaining functions are purely plotting functions. The following two are to plot the time series. There are two for the 2 cases - multilevel and single level data. It is cleaner to have these as 2 functions, rather than one function with many if loops to account for the presence or absence of levels. Like all the plots in tis report, it is interactive and collapsed to just one plot. This is in order to save space. Use the dropdown menu to select the plot of interest. 
 ```{python}
 def create_timeseries_plot_single_level(data, data_type):
     '''
@@ -732,6 +717,7 @@ def create_timeseries_plot_single_level(data, data_type):
     return fig
 ```
 
+This is the same function as above, just with the functionality of plotting multiple levels on one plot, rather than just being a single time sereis. This is to account for the 4 levels of data present at each station.
 ```{python}
 def create_timeseries_plot_multilevel(data):
     '''
@@ -1071,6 +1057,13 @@ def create_seasonal_plot_single_level(data, data_type):
 So, that was a lot, but those functions make up most of the code! Now we can move on to some analysis. Lets use the 'process_data_files' function to stitch together our datasets, and also make a log version of the RECO data set too, since that could be interesting:
 
 ```{python}
+
+# define  data paths
+reco_data = './data/reco/'
+soil_water_data = './data/swc/'
+filtered_station_locations = './data/filtered-fluxnet-station-coords.csv'
+
+# load the data into the dictionaries
 reco_data_dict = process_data_files(reco_data)
 log_reco_data_dict = log_transfo_data_dict(reco_data_dict)
 swc_data_dict = process_data_files(soil_water_data)
@@ -1133,7 +1126,7 @@ df_filtered.to_csv(output_csv_file_path, index=False)
 
 print(f"Filtered CSV file has been saved to {output_csv_file_path}")
 ```
-In this particular project, I am only interested in stations with 4 levels. Using the four levels filtered SWC dataset (for the identification of the sttaions with 4 levels in the coordinate dataset), and the filtered coordinate dataset, here is a map to illustrate where the eddy covariance stations are that we are looking at through the rest of this project:
+In this particular project, I am only interested in stations with 4 levels. Using the four levels filtered SWC dataset (for the identification of the sttaions with 4 levels in the coordinate dataset), and the filtered coordinate dataset, here is a map to illustrate where the FLUXNET eddy covariance stations are that we are looking at through the rest of this project:
 
 ```{python}
 
@@ -1295,9 +1288,15 @@ markdown_table = swc_logreco_metrics_df.to_markdown(index=False)
 
 print(markdown_table)
 ```
+Strong Positive Correlation: This could indicate that as soil moisture increases, ecosystem respiration increases. This might be observed in water-limited environments where increased water availability boosts microbial activity and plant respiration.
+Weak or No Correlation: This might suggest that other factors (like temperature or nutrient availability) are more dominant in controlling ecosystem respiration at that site or time period.
+Negative Correlation: This could occur in waterlogged conditions where excessive moisture limits oxygen availability, reducing microbial and root respiration.
+The strength and nature of the correlation might change with seasons. For example, stronger correlations might be observed during growing seasons when plant activity is high.
+Threshold Effects: You might observe threshold effects where the correlation changes dramatically above or below certain SWC levels, indicating optimal moisture ranges for ecosystem respiration.
+Lag Effects: There might be time lags between changes in SWC and corresponding changes in RECO, which could affect the observed correlations.
+Implications for Carbon Cycling: Strong correlations could indicate the importance of soil moisture in regulating ecosystem carbon fluxes, which has implications for understanding and modeling carbon cycle responses to climate change.
 
-
-As can be seen from the output of this cell, some stations do not have location data. I am not really sure why this is; I checked again on the FLUXNET website, where the data is located, and they are not present there. Therefore the following world map visualisation of the data do not feature the stations that do not have available location information. The following code confirms which stations are not present in the location data table: 
+As can be seen from the output of this cell, some stations do not have location data. I am not really sure why this is; I checked again on the FLUXNET website, where the data is located, and they are not present there. Therefore the world map visualisations of the data do not feature the stations that do not have available location information. The following code confirms which stations are present in the location data table: 
 
 ```{python}
 # checking which prefixes are present in the final dataset, just to see if I can Idenitfy tem. Taking into consideration the ones that dont have coordinates on FLUXNET, for some reason. 
@@ -1309,18 +1308,13 @@ for key in swc_filtered.keys():
     unique_prefixes.add(prefix)
 
 for prefix in unique_prefixes:
-    print(prefix)
+    print('the following stations have coordinates data ', prefix)
 ```
 
-TALK A LITTLE ABOUT EACH OF THESE RESULTS
-
-TEMPORAL EVOLUTION
 
 We can now look at te temporal evolution of SWC and RECO at the different stations. Here I am plotting only the stations I filtered for earlier with 4 levels. Since the dictionaries I use to structure the data have the same structure, you could also use the non filtered data (swc_data_dict, for eaxmple) to see more stations. 
 
 Again, this is an interactive plot set up featuring a drop down menu, for space saving reasons. 
-
-CHANGE BLUE TO HOT PINK IN THIS PLOT TIMESERIES
 
 
 
@@ -1337,13 +1331,8 @@ And here is the RECO time series:
 create_timeseries_plot_single_level(reco_swc_filtered, 'RECO')
 ```
 
-I recommend looking at DE-HoH for a nice example of a a clean plot with the 4 levels well represented. 
 
-TALK A BIT ABOUT THE TEMP EVOL PLOTS
-mention the lines in it
-
-These plots are very messy, and a lot of them feature sections with very flat lines. These are simply points where, for a period of time, data at that level was not recorded for whatever reason. The lines are purely visual (I couldnt get them out in time :( ) and are not actual data. Even though this raw data is quite messy, we can still see 2 interesting things - the behaviour of SWC at different depths, and, in many cases, a strong seasonality. So then decided to look at the seasonal trends. Again, I wasnt able to create the plots in the way I wanted to for this (it would have been many many pages long), so I have included here 2 example plots. I chose the stations FR-Hes, and ANOTHER, since the have a long time series, and so are the most optimal for demonstrating seasonal variation with this dataset. However, it is not so bad, since they are 'just' visualisations, and the meaningful numbers can b
-
+These plots are very messy, and a lot of them feature sections with very flat lines. These are simply points where, for a period of time, data at that level was not recorded for whatever reason, or that the time steps were removed with the 'remove_missing_time_steps' function, for consistency across the time series. The lines are purely visual (I couldnt get them out in time :( ) and are not actual data. Even though this raw data is quite messy, we can still see 2 interesting things - the behaviour of SWC at different depths, and, in many cases, a strong seasonality. So then decided to look at the seasonal trends.
 
 Below I discuss some stations that show particularly interesting or unique patterns
 

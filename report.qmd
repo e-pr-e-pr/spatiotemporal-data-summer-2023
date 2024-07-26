@@ -47,12 +47,12 @@ I downloaded the data via this website with point-and-click; I did not use a dow
 
 
 This is the steps/things I did to download the data:
-- Navigate to https://fluxnet.org/data/download-data/
-- Select the FLUXNET-CH4 Community pProduct - FLUXNET-CH4 CC-BY-4.0 Data
-- Select all the sites, and fill in the intended use section of the page
-- Download all files - consider using a plugin like DownThemAll (FireFox, Chrome) to download all the files at once.
-- Unzip all the folders and put them where you want (consider using 7zip or similar to do them all at once)
-- Run the following code to process the hourly data into daily data
+* Navigate to https://fluxnet.org/data/download-data/
+* Select the FLUXNET-CH4 Community pProduct - FLUXNET-CH4 CC-BY-4.0 Data
+* Select all the sites, and fill in the intended use section of the page
+* Download all files - consider using a plugin like DownThemAll (FireFox, Chrome) to download all the files at once.
+* Unzip all the folders and put them where you want (consider using 7zip or similar to do them all at once)
+* Run the following code to process the hourly data into daily data
 
 ```{python}
 
@@ -98,7 +98,7 @@ def process_csv_file(file_path, column_to_analyse, output_dir):
     print(f"Results have been written to {output_path}")
 
 ```
-Now youshould have folders with individual stations and levels as .txt files. This is also the data you will find here in this repo, under /data/RECO/ or /data/SWC/.
+Now you should have folders with individual stations and levels as .txt files. This is also the data you will find here in this repo, under /data/RECO/ or /data/SWC/.
 
 https://fluxnet.org/data/aboutdata/data-variables/ and https://fluxnet.org/data/fluxnet2015-dataset/fullset-data-product/  These pages provides an overview of the data variables found in the data. 
 
@@ -929,6 +929,7 @@ def create_seasonal_plot_multi_level(data, data_type):
     fig.update_layout(
         height=1000,
         title_text=f"Seasonal Variation of {data_type.upper()}",
+                yaxis_title=f"{data_type.upper()} (%)"
         showlegend=True,
         updatemenus=[dict(
             active=0,
@@ -958,7 +959,7 @@ def create_seasonal_plot_multi_level(data, data_type):
         ticktext=month_names
     )
     fig.update_yaxes(
-        title_text=f"{data_type.upper()} (gC m-2 day-1)",
+        title_text=f"{data_type.upper()} (%)",
         row=4, col=1
     )
     for i in range(1, 5):
@@ -1054,7 +1055,7 @@ def create_seasonal_plot_single_level(data, data_type):
     fig.update_layout(
         height=600,
         title_text=f"Seasonal Variation of {data_type.upper()}",
-        yaxis_title=f"'{data_type.upper()} (gC m-2 day-1)'",
+        yaxis_title=f"{data_type.upper()} (gC m-2 day-1)"
         showlegend=True,
         updatemenus=[dict(
             active=0,
@@ -1082,7 +1083,6 @@ def create_seasonal_plot_single_level(data, data_type):
         tickvals=list(range(1, 13)),
         ticktext=month_names
     )
-    fig.update_yaxes(title_text=f"{data_type.upper()}")
 
     if len(fig.data) > 0:
         fig.data[0].visible = True

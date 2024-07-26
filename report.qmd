@@ -56,22 +56,23 @@ This is the steps/things I did to download the data:
 
 ```{python}
 
-def process_csv_file(file_path, column_to_analyze, output_dir):
+def process_csv_file(file_path, column_to_analyse, output_dir):
     """
     Processes a CSV file to calculate daily averages and counts for a specified column.
     
     Parameters:
         file_path (str): Path to the input CSV file.
-        column_to_analyze (str): The column for which to calculate daily averages. i.e. SWC_1, SWC_2 ...
+        column_to_analyse (str): The column for which to calculate daily averages. i.e. SWC_1, SWC_2 ...
         output_dir (str): Directory to save the output text file.
     """
     #extract the station name and level from the file name
     file_name = os.path.basename(file_path)
     parts = file_name.split('_')
     station_name = parts[1]
-    level = column_to_analyze.split('_')[1]
+    column_base = column_to_analyse.split('_')[0].lower()
+    level = column_to_analyse.split('_')[1]
     
-    df = pd.read_csv(file_path, parse_dates=['TIMESTAMP_START'])
+    df = pd.read_csv(file_path, parse_dates=['TIMESTAMP_START'], date_parser=lambda x: pd.to_datetime(x, format='%Y%m%d%H%M'))
     
     # replace -9999 with NaN!!
     df = df.replace(-9999, np.nan)
@@ -81,20 +82,21 @@ def process_csv_file(file_path, column_to_analyze, output_dir):
     df.set_index('DATE', inplace=True)
     
     # calculate daily averages and count observations
-    daily_stats = df.groupby(df.index)[column_to_analyze].agg(['mean', 'count'])
+    daily_stats = df.groupby(df.index)[column_to_analyse].agg(['mean', 'count'])
     
     # create the output file name
-    output_file = f"{station_name}_swc_l{level}_daily_avg.txt"
+    output_file = f"{station_name}_{column_base}_l{level}_daily_avg.txt"
     output_path = os.path.join(output_dir, output_file)
     
     # write results to the output file
     with open(output_path, 'w') as f:
-        f.write(f"Daily averages and observation counts for {column_to_analyze}\n")
+        f.write(f"Daily averages and observation counts for {column_to_analyse}\n")
         f.write("time	,value	,nobs	\n") # nobs = number of observations
         for date, row in daily_stats.iterrows():
             f.write(f"{date},{row['mean']:.4f},{row['count']}\n")
     
     print(f"Results have been written to {output_path}")
+
 ```
 Now youshould have folders with individual stations and levels as .txt files. This is also the data you will find here in this repo, under /data/RECO/ or /data/SWC/.
 

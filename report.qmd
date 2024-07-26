@@ -929,7 +929,7 @@ def create_seasonal_plot_multi_level(data, data_type):
     fig.update_layout(
         height=1000,
         title_text=f"Seasonal Variation of {data_type.upper()}",
-                yaxis_title=f"{data_type.upper()} (%)"
+        yaxis_title=f"{data_type.upper()} (%)",
         showlegend=True,
         updatemenus=[dict(
             active=0,
@@ -1055,7 +1055,7 @@ def create_seasonal_plot_single_level(data, data_type):
     fig.update_layout(
         height=600,
         title_text=f"Seasonal Variation of {data_type.upper()}",
-        yaxis_title=f"{data_type.upper()} (gC m-2 day-1)"
+        yaxis_title=f"{data_type.upper()} (gC m-2 day-1)",
         showlegend=True,
         updatemenus=[dict(
             active=0,

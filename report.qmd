@@ -749,7 +749,7 @@ def create_timeseries_plot_single_level(data, data_type):
         title_text=f"Select a Station to view {data_type.upper()} Time Series",
         title_x=0.5,
         xaxis_title="Time",
-        yaxis_title=f"{data_type.upper()} (gC m-2 day-1)"
+        yaxis_title=f"{data_type.upper()} (gC m-2 day-1)""
     )
 
     #make the first station visible by default
@@ -952,7 +952,7 @@ def create_seasonal_plot_multi_level(data, data_type):
 
     fig.update_xaxes(
         title_text="Month", 
-        yaxis_title=f"{data_type.upper()} (gC m-2 day-1)"
+    yaxis_title=f"{data_type.upper()} (gC m-2 day-1)",
         row=4, col=1, 
         tickmode='array', 
         tickvals=list(range(1, 13)),
@@ -1051,7 +1051,7 @@ def create_seasonal_plot_single_level(data, data_type):
     fig.update_layout(
         height=600,
         title_text=f"Seasonal Variation of {data_type.upper()}",
-        yaxis_title=f"{data_type.upper()} (gC m-2 day-1)"
+        yaxis_title=f"'{data_type.upper()} (gC m-2 day-1)'",
         showlegend=True,
         updatemenus=[dict(
             active=0,

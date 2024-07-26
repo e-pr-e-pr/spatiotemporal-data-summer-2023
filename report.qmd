@@ -5,8 +5,6 @@ subtitle: "Matriculation Number: 3749872"
 format:
   html:
     code-fold: true
-    theme: 
-      - cosmo
 jupyter: python3
 execute:
   echo: true
@@ -23,8 +21,7 @@ import os
 
 ## Introduction 
 
-
-This analysis focuses on Soil Water Content (SWC) and Ecosystem Respiration (RECO) data from FLUXNET. FLUXNET is a global network of micrometeorological measurement sites. FLUXNET uses eddy covariance techniques to measure the exchanges of carbon dioxide, water vapor, and energy between terrestrial ecosystems and the atmosphere. They provide high-frequency measurements of various environmental parameters, allowing for study of carbon, water, and energy fluxes.
+My main research question here is: what does the relationship between soil water content (SWC - volumetric, expressed in %) and ecosystem respiration (RECO - gC m-2 day-1) look like? Is there any linearity there? And what happens to this relationship and depth into the soil increases? This analysis focuses on Soil Water Content (SWC) and Ecosystem Respiration (RECO) data from FLUXNET. FLUXNET is a global network of micrometeorological measurement sites. FLUXNET uses eddy covariance techniques to measure the exchanges of carbon dioxide, water vapor, and energy between terrestrial ecosystems and the atmosphere. They provide high-frequency measurements of various environmental parameters, allowing for study of carbon, water, and energy fluxes.
 
 In this study, I concentrate on two key variables:
 - Soil Water Content (SWC): Measured at four depths (0.02m, 0.05m, 0.1m, 0.3m), SWC is vital for understanding water availability in the soil profile. It influences plant growth, soil microbial activity, and overall ecosystem functioning.
@@ -46,19 +43,64 @@ This analysis aims to explore the relationship between SWC and RECO across vario
 ## Data sources and availability
 All the data used in this analysis is from FLUXNET - here is the link straight to the data download page: https://fluxnet.org/data/download-data/. The data is free to download, but a user account must be made before the data can be downloaded. 
 
-I downloaded the data via this website with point-and-click; I did not use a download script. The following images docment the step-by-step process of obtaining the data:
+I downloaded the data via this website with point-and-click; I did not use a download script. Since the data is stored in .csv format, it is pretty light, and point-and-click worked just fine and took only about 20 minutes. :) I did some data processing to it - taking the averages. The code for that is also found below. I checked the daily data from FLUXNET, and this is different from the daily average - it just takes one data point and calls it a day. I wanted the daily average, hence this process.
 
 
-https://fluxnet.org/data/aboutdata/data-variables/ This page provides an overview of the data variables found in the data.
+This is the steps/things I did to download the data:
+- Navigate to https://fluxnet.org/data/download-data/
+- Select the FLUXNET-CH4 Community pProduct - FLUXNET-CH4 CC-BY-4.0 Data
+- Select all the sites, and fill in the intended use section of the page
+- Download all files - consider using a plugin like DownThemAll (FireFox, Chrome) to download all the files at once.
+- Unzip all the folders and put them where you want (consider using 7zip or similar to do them all at once)
+- Run the following code to process the hourly data into daily data
 
-https://fluxnet.org/data/fluxnet2015-dataset/fullset-data-product/
+```{python}
 
-Talk about fluxnet - eddy covariance site etc etc
-CHECK DEPTHS BC I THINK I WROTE THEM WRONG
+def process_csv_file(file_path, column_to_analyze, output_dir):
+    """
+    Processes a CSV file to calculate daily averages and counts for a specified column.
+    
+    Parameters:
+        file_path (str): Path to the input CSV file.
+        column_to_analyze (str): The column for which to calculate daily averages. i.e. SWC_1, SWC_2 ...
+        output_dir (str): Directory to save the output text file.
+    """
+    #extract the station name and level from the file name
+    file_name = os.path.basename(file_path)
+    parts = file_name.split('_')
+    station_name = parts[1]
+    level = column_to_analyze.split('_')[1]
+    
+    df = pd.read_csv(file_path, parse_dates=['TIMESTAMP_START'])
+    
+    # replace -9999 with NaN!!
+    df = df.replace(-9999, np.nan)
+    
+    # set the date as the index
+    df['DATE'] = df['TIMESTAMP_START'].dt.date
+    df.set_index('DATE', inplace=True)
+    
+    # calculate daily averages and count observations
+    daily_stats = df.groupby(df.index)[column_to_analyze].agg(['mean', 'count'])
+    
+    # create the output file name
+    output_file = f"{station_name}_swc_l{level}_daily_avg.txt"
+    output_path = os.path.join(output_dir, output_file)
+    
+    # write results to the output file
+    with open(output_path, 'w') as f:
+        f.write(f"Daily averages and observation counts for {column_to_analyze}\n")
+        f.write("time	,value	,nobs	\n") # nobs = number of observations
+        for date, row in daily_stats.iterrows():
+            f.write(f"{date},{row['mean']:.4f},{row['count']}\n")
+    
+    print(f"Results have been written to {output_path}")
+```
+Now youshould have folders with individual stations and levels as .txt files. This is also the data you will find here in this repo, under /data/RECO/ or /data/SWC/.
 
-The README for the data is pretty much everything you need. 
+https://fluxnet.org/data/aboutdata/data-variables/ and https://fluxnet.org/data/fluxnet2015-dataset/fullset-data-product/  These pages provides an overview of the data variables found in the data. 
 
-Also mention the coordinate data!
+For the station location coordinate data, I got this also from FLUXNET. They didnt have it available to download, but they did have it as a table on the following page: https://fluxnet.org/sites/site-list-and-pages/ . I simply copy and pasted this table into a .csv file to use here in my analysis. 
 
 
 ## Setting up the functions to run the analysis
@@ -587,7 +629,7 @@ def create_world_correlation_map(df, metrics, levels, data_type): # for now, ave
                     label = f'{metric.capitalize()} - Level {level}',
                     method = 'update',
                     args = [{'visible': visible},
-                            {'annotations[1].text': f'{metric.capitalize()} between SWC and {data_type} for Level {level}, all stations'}]
+                            {'annotations[1].text': f'{metric.capitalize()} between SWC (%) and {data_type} ("gC m-2 day-1") for Level {level}, all stations'}]
                 )
             )
 
@@ -708,7 +750,7 @@ def create_timeseries_plot_single_level(data, data_type):
         title_text=f"Select a Station to view {data_type.upper()} Time Series",
         title_x=0.5,
         xaxis_title="Time",
-        yaxis_title=data_type.upper()
+        yaxis_title=f"{data_type.upper()} ("gC m-2 day-1")"
     )
 
     # Make the first station visible by default
@@ -777,7 +819,7 @@ def create_timeseries_plot_multilevel(data):
         title_text="Select a Station to view SWC Time Series",
         title_x=0.5,
         xaxis_title="Time",
-        yaxis_title="SWC"
+        yaxis_title="SWC (%)"
     )
 
     # Make the first station visible by default
@@ -912,6 +954,7 @@ def create_seasonal_plot_multi_level(data, data_type):
 
     fig.update_xaxes(
         title_text="Month", 
+        yaxis_title=f"{data_type.upper()} ("gC m-2 day-1")"
         row=4, col=1, 
         tickmode='array', 
         tickvals=list(range(1, 13)),
@@ -1016,6 +1059,7 @@ def create_seasonal_plot_single_level(data, data_type):
     fig.update_layout(
         height=600,
         title_text=f"Seasonal Variation of {data_type.upper()}",
+        yaxis_title=f"{data_type.upper()} ("gC m-2 day-1")"
         showlegend=True,
         updatemenus=[dict(
             active=0,
@@ -1111,7 +1155,7 @@ metrics_to_csv(swc_four_levels_logreco_metrics, 'SWC', 'logRECO')
 So far, so cool! But its lacking a bit of explicit spatio temporal energy. So, lets firstly plot the stations on a world map so we can see where we are looking at. 
 
 
-This is how I filtered the full station coordinate data set for only the ones that were present in my final datasets. You dont need to run this in the final reproducible workflow - but include but Ive included it as a snippet for full reproducibility.
+This is how I filtered the full station coordinate data set for only the ones that were present in my final datasets. This wont run this in the final reproducible workflow, since I just loaded the CSV I already filtered- but Ive include but Ive included it as a snippet for full reproducibility.
 
 ```{python}
 
@@ -1196,7 +1240,7 @@ fig.show()
 This map shows the locations ADD TO THIS . This is done for visualisation purposes. 
 
 
-I now visualise the results of the metric calculations. The visual representation on a map creates an instructive first look at the potential patterns in the data. Ive displayed it as a dropdown menu, to save some space on the page, and to easily find the variable one might be interested in. 
+I now visualise the results of the metric calculations. The visual representation on a map creates an instructive first look at the potential patterns in the data. Ive displayed it as a dropdown menu, to save some space on the page, and to easily find the variable one might be interested in. So initial thoughts on what the results could mean: 
 
 ```{python}
 
@@ -1289,15 +1333,21 @@ markdown_table = swc_logreco_metrics_df.to_markdown(index=False)
 
 print(markdown_table)
 ```
-Strong Positive Correlation: This could indicate that as soil moisture increases, ecosystem respiration increases. This might be observed in water-limited environments where increased water availability boosts microbial activity and plant respiration.
-Weak or No Correlation: This might suggest that other factors (like temperature or nutrient availability) are more dominant in controlling ecosystem respiration at that site or time period.
-Negative Correlation: This could occur in waterlogged conditions where excessive moisture limits oxygen availability, reducing microbial and root respiration.
-The strength and nature of the correlation might change with seasons. For example, stronger correlations might be observed during growing seasons when plant activity is high.
-Threshold Effects: You might observe threshold effects where the correlation changes dramatically above or below certain SWC levels, indicating optimal moisture ranges for ecosystem respiration.
-Lag Effects: There might be time lags between changes in SWC and corresponding changes in RECO, which could affect the observed correlations.
-Implications for Carbon Cycling: Strong correlations could indicate the importance of soil moisture in regulating ecosystem carbon fluxes, which has implications for understanding and modeling carbon cycle responses to climate change.
 
-As can be seen from the output of this cell, some stations do not have location data. I am not really sure why this is; I checked again on the FLUXNET website, where the data is located, and they are not present there. Therefore the world map visualisations of the data do not feature the stations that do not have available location information. The following code confirms which stations are present in the location data table: 
+Here, I will focus on the correlation coefficient and R sqaured values. One can see that in both the RECo and logRECO with SWC metrics, there are similar values (RECO / logRECO and SWC - in both cases correlation: They all err to the negative, with very weak positive correlaation only sometimes. R squared: 0 to between 0.3 and 0.4). This suggests that the relationship  between RECO and SWC is highly non linear. Simple transformations may not be sufficient to capture the complexity of the relationship, and indeed might involve more complex interactions and threshold effects that arent easily captued by a mathematical transformation. Additionally, it confirms the fact that it is highly likely that SWC and RECO are influenced by more factors - this multidimensional relationsip cant be reduced to these 2 variables alone. 
+
+In particular the low R squared values indicate, as briefly mentioned, that the linear relationship between SWC and RECO is generally weak, and that SWC explains at most 0.3 - 0.4 (level and station dependent) of the variability in RECO. It is highly likely that other factors such as temperature, available nutrients, vegetation type, precipitation etc...play a role in determining RECO. 
+
+The predominantly negative correlation is easier to understand, especially when you consider that most of our data is in Northern Europe - a part of the world that experiences quite large seasonal differences, and only limited parts of the year where things can actually grow. In European winter, which tend to be wet and cold,  soil water content increases, while RECO decreases (due to cooler temperatures, lack of sunlight and available nutirents). In summer in Europe, which tend to be warm and not quite so wet, soil water content decreases (due to less rainfall and higher temperatures), and RECO increases. 
+
+If we look at the only station outside of Europe - GF-Guy (Guyana, South America), we see a very, very weak correlation that fluctuates between positive and negative. This is effectively no correlation between the 2. Guyana has a tropical climate classification, with generally warm, wet weather and a pretty stable temperature year round. The R squared for each level in both examples is prqactically 0 (0.013, for example), indicating that SWC explains basically no variability of RECO; the variability must come from other factors. This pattern is probably due to the relative stability of Guyana's climate: SWC might not be a limiting factor of biological respiration processes in such places due to the relative abundance of warmth and rain. 
+
+There does not seem to be a clear pattern with depth, either. 
+
+Its clear from these results that the range of correlation coefficients and R squared values suggests large variabilty across different ecosystems and time periods, which could be due to differences in soil type, vegetation cover, climate zones. More data, especially from different climates, is necessary to confirm this. 
+
+It must also be noted that the GF-Guy station is one of the stations that has less, and older data, than some others. I trust this data, but I do think it is important to point out that I am not working with the same amount of data points for every station. This would of course be the ideal case, but I am limited by available data. 
+
 
 ```{python}
 # checking which prefixes are present in the final dataset, just to see if I can Idenitfy tem. Taking into consideration the ones that dont have coordinates on FLUXNET, for some reason. 
@@ -1313,7 +1363,7 @@ for prefix in unique_prefixes:
 ```
 
 
-We can now look at te temporal evolution of SWC and RECO at the different stations. Here I am plotting only the stations I filtered for earlier with 4 levels. Since the dictionaries I use to structure the data have the same structure, you could also use the non filtered data (swc_data_dict, for eaxmple) to see more stations. 
+We can now look at the temporal evolution of SWC and RECO at the different stations. Here I am plotting only the stations I filtered for earlier with 4 levels. Since the dictionaries I use to structure the data have the same structure, you could also use the non filtered data (swc_data_dict, for eaxmple) to see more stations. 
 
 Again, this is an interactive plot set up featuring a drop down menu, for space saving reasons. 
 
@@ -1359,15 +1409,14 @@ create_seasonal_plot_single_level(reco_swc_filtered, 'reco')
 ```
 
 
-As mentioned before (with the plots of locations of available stations), almost all the stations are in Europe. There is one in South America, CHEKC IF I ACTUALLY MENTIONED IT BEFORE
-
-DISCUSS THESE PLOTS MORE
-
-smth like we observe a general trend of the data in northern europe being ..... however, there is an outlier in ... which is interesting. this difference could be accounted for by considering .... More data and research is needed to confirm this. 
-
-also about guyana station - SWC consistencies with depth
-
+In these temporal plots of SWC, I observestrong seasonality, but no real consistency in the levels - in different stations, different level numbers are feature te highest and the lowest SWC. This suggests that soil structure and land cover type plays a role in SWC.
 ## Summary of results
+
+- The relationship between Soil Water Content (SWC) and Ecosystem Respiration (RECO) is highly non-linear, with predominantly negative correlations and low R-squared values, suggesting that SWC alone explains only a small portion of RECO variability.
+- Significant differences were observed between European and tropical sites, with the tropical station in Guyana showing almost no correlation between SWC and RECO, likely due to its stable climate.
+- Temporal plots revealed strong seasonality in SWC and RECO for European stations, but with inconsistent patterns across different soil depths, indicating the influence of local soil structure and land cover.
+- The analysis of monthly seasonal variations highlighted recurring patterns and fluctuations, which could be crucial for predicting future values and understanding climate change impacts.
+- The study underscores the complexity of ecosystem processes and the need for incorporating additional variables such as temperature, precipitation, and soil characteristics to fully understand the dynamics between SWC and RECO.
 
 ## Outlook 
 

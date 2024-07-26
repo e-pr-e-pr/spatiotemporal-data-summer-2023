@@ -74,24 +74,24 @@ def log_transfo_data_dict(original_data_dict):
 
 def remove_missing_time_steps(dict1):
     '''
-Description:
-    This function processes a dictionary of FLUXNET data to remove time steps that are missing in some levels but present in others. It ensures time consistency across different measurement levels for each station. The function operates on the data dictionary in-place, modifying it to maintain only time steps that are present in all levels of a given station.
+    Description:
+        This function processes a dictionary of FLUXNET data to remove time steps that are missing in some levels but present in others. It ensures time consistency across different measurement levels for each station. The function operates on the data dictionary in-place, modifying it to maintain only time steps that are present in all levels of a given station.
 
-Parameters:
-    dict1 - A dictionary containing FLUXNET data. The structure is expected to be:
-            {station_name_level: {'time': [datetime_list], 'data': [float_list]}}
-            where station_name_level is a string combining station name and measurement level.
+    Parameters:
+        dict1 - A dictionary containing FLUXNET data. The structure is expected to be:
+                {station_name_level: {'time': [datetime_list], 'data': [float_list]}}
+                where station_name_level is a string combining station name and measurement level.
 
-Return:
-    dict1 - The same dictionary as input, but with missing time steps removed to ensure consistency across levels for each station. The structure remains the same, but some entries in 'time' and 'data' lists may have been removed.
+    Return:
+        dict1 - The same dictionary as input, but with missing time steps removed to ensure consistency across levels for each station. The structure remains the same, but some entries in 'time' and 'data' lists may have been removed.
 
-Key Operations:
-    1. Groups data by station prefix.
-    2. Uses the first level of each station as a reference for time steps.
-    3. Compares other levels to the reference, removing time steps (and corresponding data) that don't exist in the reference level.
-    4. Updates the dictionary in-place, ensuring all levels for a station have consistent time steps.
+    Key Operations:
+        1. Groups data by station prefix.
+        2. Uses the first level of each station as a reference for time steps.
+        3. Compares other levels to the reference, removing time steps (and corresponding data) that don't exist in the reference level.
+        4. Updates the dictionary in-place, ensuring all levels for a station have consistent time steps.
 
-'''
+    '''
     for station_name, levels_data in dict1.items():
         station_prefix = station_name.split('_')[0]
 
@@ -128,27 +128,27 @@ Key Operations:
 
 def four_levels_filter(data_dict, data_name):
     '''
-Description:
-    This function processes a dictionary of FLUXNET data to filter and restructure it, keeping only stations with exactly four depth measurement levels. It ensures that all levels within a station have consistent time steps. The function creates a new dictionary with a standardized structure for further analysis.
+    Description:
+        This function processes a dictionary of FLUXNET data to filter and restructure it, keeping only stations with exactly four depth measurement levels. It ensures that all levels within a station have consistent time steps. The function creates a new dictionary with a standardized structure for further analysis.
 
-Parameters:
-    data_dict - A dictionary containing FLUXNET data. The structure is expected to be:
-                {station_name_level: {'time': [datetime_list], 'data': [float_list]}}
-    data_name - A string representing the name of the data variable being processed.
+    Parameters:
+        data_dict - A dictionary containing FLUXNET data. The structure is expected to be:
+                    {station_name_level: {'time': [datetime_list], 'data': [float_list]}}
+        data_name - A string representing the name of the data variable being processed.
 
-Return:
-    four_levels_only_gst_dict - A new dictionary containing only stations with four levels, 
-                                restructured for consistency. The new structure is:
-                                {station_name_data_name_level: {'time': [datetime_list], 'data': [float_list]}}. 'gst' in the return statement is an artifact from testing the function that I didn' remove. Please ignore the name there. 
+    Return:
+        four_levels_only_gst_dict - A new dictionary containing only stations with four levels, 
+                                    restructured for consistency. The new structure is:
+                                    {station_name_data_name_level: {'time': [datetime_list], 'data': [float_list]}}. 'gst' in the return statement is an artifact from testing the function that I didn' remove. Please ignore the name there. 
 
-Key Operations:
-    1. Groups data by station name.
-    2. Filters to keep only stations with exactly four measurement levels.
-    3. Finds common time steps across all levels for each station.
-    4. Filters data to include only these common time steps, ensuring temporal consistency.
-    5. Restructures the data into a new dictionary with a standardized format.
+    Key Operations:
+        1. Groups data by station name.
+        2. Filters to keep only stations with exactly four measurement levels.
+        3. Finds common time steps across all levels for each station.
+        4. Filters data to include only these common time steps, ensuring temporal consistency.
+        5. Restructures the data into a new dictionary with a standardized format.
 
-'''
+    '''
 
     desired_levels_stations = {}
 
@@ -195,35 +195,35 @@ Key Operations:
 
 def filter_level_data_common_time(dict1, dict2):    # order is important! dct1 is level data ie swc and dict2 is non leveled data ie reco
     '''
-Description:
-    This function aligns two FLUXNET datasets: one resulting from the four_levels_filter function (dict1) 
-    and another dataset (dict2) that may not have level-specific data. It ensures that both datasets 
-    have matching time steps for each station and level, allowing for comparative analysis.
+    Description:
+        This function aligns two FLUXNET datasets: one resulting from the four_levels_filter function (dict1) 
+        and another dataset (dict2) that may not have level-specific data. It ensures that both datasets 
+        have matching time steps for each station and level, allowing for comparative analysis.
 
-Parameters:
-    dict1 - A dictionary containing level-specific FLUXNET data, output from the four_levels_filter function.
-            Structure: {station_name_data_name_level: {'time': [datetime_list], 'data': [float_list]}}
-    dict2 - A dictionary containing non-level-specific FLUXNET data.
-            Structure: {station_name: {'time': [datetime_list], 'data': [float_list]}}
+    Parameters:
+        dict1 - A dictionary containing level-specific FLUXNET data, output from the four_levels_filter function.
+                Structure: {station_name_data_name_level: {'time': [datetime_list], 'data': [float_list]}}
+        dict2 - A dictionary containing non-level-specific FLUXNET data.
+                Structure: {station_name: {'time': [datetime_list], 'data': [float_list]}}
 
-Return:
-    dict1_filtered - technically no change with inpout dict1 - redefined here for naming consistency.
-    dict2_filtered - A new dictionary derived from dict2, restructured to match dict1's format and 
-                     filtered to include only common time steps with dict1.
-                     New structure: {station_name_level: {'time': [datetime_list], 'data': [float_list]}}
+    Return:
+        dict1_filtered - technically no change with inpout dict1 - redefined here for naming consistency.
+        dict2_filtered - A new dictionary derived from dict2, restructured to match dict1's format and 
+                        filtered to include only common time steps with dict1.
+                        New structure: {station_name_level: {'time': [datetime_list], 'data': [float_list]}}
 
-Key Operations:
-    1. Iterates through stations in dict2 and matches them with corresponding levels in dict1.
-    2. Identifies common time steps between matched datasets.
-    3. Filters both datasets to include only these common time steps.
-    4. Restructures dict2 to match the level-specific format of dict1.
+    Key Operations:
+        1. Iterates through stations in dict2 and matches them with corresponding levels in dict1.
+        2. Identifies common time steps between matched datasets.
+        3. Filters both datasets to include only these common time steps.
+        4. Restructures dict2 to match the level-specific format of dict1.
 
-Note:
-    This function is crucial for preparing FLUXNET data for comparative analysis between different 
-    types of measurements, especially when one dataset has been pre-processed for four-level consistency. 
-    It ensures temporal alignment between level-specific and level-free data, allowing for 
-    accurate comparisons across different variables and measurement levels.
-'''
+    Note:
+        This function is crucial for preparing FLUXNET data for comparative analysis between different 
+        types of measurements, especially when one dataset has been pre-processed for four-level consistency. 
+        It ensures temporal alignment between level-specific and level-free data, allowing for 
+        accurate comparisons across different variables and measurement levels.
+    '''
     dict1_filtered = {}
     dict2_filtered = {}
 
@@ -353,29 +353,29 @@ def calculate_and_store_all_levels(dict1, dict2):
 
 def metrics_to_csv(metrics_dict, name1, name2):
     '''
-Description:
-    This function takes a dictionary of calculated metrics and writes them to a CSV file. It's designed 
-    to export statistical metrics (such as correlation coefficient, R-squared, slope, and intercept) 
-    for different stations, likely derived from comparing two FLUXNET variables.
+    Description:
+        This function takes a dictionary of calculated metrics and writes them to a CSV file. It's designed 
+        to export statistical metrics (such as correlation coefficient, R-squared, slope, and intercept) 
+        for different stations, likely derived from comparing two FLUXNET variables.
 
-Parameters:
-    metrics_dict - A nested dictionary containing calculated metrics for each station.
-                   Structure: {station: {metric_set: {metric_name: value}}}
-    name1 - A string, likely representing the name of the first variable being compared.
-    name2 - A string, likely representing the name of the second variable being compared.
+    Parameters:
+        metrics_dict - A nested dictionary containing calculated metrics for each station.
+                    Structure: {station: {metric_set: {metric_name: value}}}
+        name1 - A string, likely representing the name of the first variable being compared.
+        name2 - A string, likely representing the name of the second variable being compared.
 
-Return:
-    None - The function doesn't return a value, but it creates a CSV file as a side effect.
+    Return:
+        None - The function doesn't return a value, but it creates a CSV file as a side effect.
 
-Key Operations:
-    1. Constructs a file name and path based on the input parameters.
-    2. Opens a new CSV file for writing.
-    3. Writes a header row with column names.
-    4. Iterates through the metrics dictionary, extracting values for each station.
-    5. Writes a row for each station with its corresponding metric values.
-    6. Prints a confirmation message with the file path upon successful completion.
+    Key Operations:
+        1. Constructs a file name and path based on the input parameters.
+        2. Opens a new CSV file for writing.
+        3. Writes a header row with column names.
+        4. Iterates through the metrics dictionary, extracting values for each station.
+        5. Writes a row for each station with its corresponding metric values.
+        6. Prints a confirmation message with the file path upon successful completion.
 
-'''
+    '''
 
 
     path = '/path/to/where/you/want/to/save/the/csv/'
@@ -397,26 +397,26 @@ Key Operations:
 
 def create_world_correlation_map(df, metrics, levels, data_type): # for now, ave to manually type in the variable for the title. want to imrove this to be dynamic later.
     '''
-Description:
-    This function creates an interactive world map using Plotly to visualize correlation metrics between 2 variables  - i.e. soil water content (SWC) and ecosystem respiration (RECO) across different measurement levels. The map includes a dropdown menu to select different metrics and levels, updating the map dynamically based on the selection.
+    Description:
+        This function creates an interactive world map using Plotly to visualize correlation metrics between 2 variables  - i.e. soil water content (SWC) and ecosystem respiration (RECO) across different measurement levels. The map includes a dropdown menu to select different metrics and levels, updating the map dynamically based on the selection.
 
-Parameters:
-    df - A Pandas DataFrame containing the data to be plotted. The DataFrame should include columns for longitude ('lon'), latitude ('lat'), station names ('station'), levels ('level'), and the metrics to be visualized.
-    metrics - A list of strings representing the names of the metrics to be visualized (e.g., ['correlation_coefficient', 'r_squared']).
-    levels - A list of strings or integers representing the measurement levels (e.g., ['L1', 'L2', 'L3', 'L4']).
-    data_type - A string representing the type of data being compared with SWC (e.g., 'RECO').
+    Parameters:
+        df - A Pandas DataFrame containing the data to be plotted. The DataFrame should include columns for longitude ('lon'), latitude ('lat'), station names ('station'), levels ('level'), and the metrics to be visualized.
+        metrics - A list of strings representing the names of the metrics to be visualized (e.g., ['correlation_coefficient', 'r_squared']).
+        levels - A list of strings or integers representing the measurement levels (e.g., ['L1', 'L2', 'L3', 'L4']).
+        data_type - A string representing the type of data being compared with SWC (e.g., 'RECO').
 
-Return:
-    fig - A Plotly Figure object containing the interactive world map with dropdown menu for selecting metrics and levels.
+    Return:
+        fig - A Plotly Figure object containing the interactive world map with dropdown menu for selecting metrics and levels.
 
-Key Operations:
-    1. Creates a base layer with all data points in light grey.
-    2. Adds traces for each combination of metric and level, initially hidden.
-    3. Configures a dropdown menu to toggle the visibility of traces based on the selected metric and level.
-    4. Sets up the map layout, including geographic settings, size, margins, and annotations.
-    5. Adds initial title and dropdown label annotations.
+    Key Operations:
+        1. Creates a base layer with all data points in light grey.
+        2. Adds traces for each combination of metric and level, initially hidden.
+        3. Configures a dropdown menu to toggle the visibility of traces based on the selected metric and level.
+        4. Sets up the map layout, including geographic settings, size, margins, and annotations.
+        5. Adds initial title and dropdown label annotations.
 
-'''
+    '''
     fig = make_subplots(rows=1, cols=1, specs=[[{'type': 'scattergeo'}]])
 
     # Create a base layer with all data points
@@ -524,35 +524,35 @@ Key Operations:
 
 def create_timeseries_plot(data, data_type):
     '''
-Description:
-    This function creates an interactive time series plot using Plotly to visualize FLUXNET data 
-    all stations in the input data. It includes a dropdown menu to select different stations, dynamically 
-    updating the plot based on the selection.
+    Description:
+        This function creates an interactive time series plot using Plotly to visualize FLUXNET data 
+        all stations in the input data. It includes a dropdown menu to select different stations, dynamically 
+        updating the plot based on the selection.
 
-Parameters:
-    data - A nested dictionary containing the time series data. 
-           For SWC: {station_datatype_level: {'time': [datetime_list], 'data': [float_list]}}
-           For other types: {station: {'time': [datetime_list], 'data': [float_list]}}
-    data_type - A string indicating the type of data being plotted ('swc' for soil water content, 
-                or another identifier for different data types). Needed for titling the plots (removes a lot of 
-                complexity to just write the name rather than extract it from dictionary)
+    Parameters:
+        data - A nested dictionary containing the time series data. 
+            For SWC: {station_datatype_level: {'time': [datetime_list], 'data': [float_list]}}
+            For other types: {station: {'time': [datetime_list], 'data': [float_list]}}
+        data_type - A string indicating the type of data being plotted ('swc' for soil water content, 
+                    or another identifier for different data types). Needed for titling the plots (removes a lot of 
+                    complexity to just write the name rather than extract it from dictionary)
 
-Return:
-    fig - A Plotly Figure object containing the interactive time series plot with a dropdown menu 
-          for selecting different stations.
+    Return:
+        fig - A Plotly Figure object containing the interactive time series plot with a dropdown menu 
+            for selecting different stations.
 
-Key Operations:
-    1. Extracts unique station names from the data keys.
-    2. Creates traces for each station and level (for SWC) or just each station (for other data types).
-    3. Configures a dropdown menu to toggle the visibility of traces based on the selected station.
-    4. Sets up the plot layout, including title, axis labels, and dropdown menu positioning.
-    5. Makes the first station's data visible by default.
+    Key Operations:
+        1. Extracts unique station names from the data keys.
+        2. Creates traces for each station and level (for SWC) or just each station (for other data types).
+        3. Configures a dropdown menu to toggle the visibility of traces based on the selected station.
+        4. Sets up the plot layout, including title, axis labels, and dropdown menu positioning.
+        5. Makes the first station's data visible by default.
 
 
-Note:
-    The function handles two different data structures based on the 'data_type' parameter, making it 
-    versatile for different types of FLUXNET data visualization.
-'''
+    Note:
+        The function handles two different data structures based on the 'data_type' parameter, making it 
+        versatile for different types of FLUXNET data visualization.
+    '''
     # Extract unique stations from the keys
     if data_type == 'swc':
         stations = list(set([key.split('_')[0] for key in data.keys()]))
@@ -635,32 +635,32 @@ Note:
 def create_seasonal_plot_multi_level(data, data_type):
 
     '''
-Description:
-    This function creates an interactive seasonal plot using Plotly to visualize FLUXNET data 
-    across multiple levels for different stations. It generates 
-    a subplot for each soil level, showing monthly averages and standard deviations.
+    Description:
+        This function creates an interactive seasonal plot using Plotly to visualize FLUXNET data 
+        across multiple levels for different stations. It generates 
+        a subplot for each soil level, showing monthly averages and standard deviations.
 
-Parameters:
-    data - A nested dictionary containing the time series data.
-           Structure: {station_datatype_level: {'time': [datetime_list], 'data': [float_list]}}
-    data_type - A string indicating the type of data being plotted (e.g., 'swc' for soil water content).
+    Parameters:
+        data - A nested dictionary containing the time series data.
+            Structure: {station_datatype_level: {'time': [datetime_list], 'data': [float_list]}}
+        data_type - A string indicating the type of data being plotted (e.g., 'swc' for soil water content).
 
-Return:
-    fig - A Plotly Figure object containing the interactive seasonal plot with subplots for each level 
-          and a dropdown menu for selecting different stations.
+    Return:
+        fig - A Plotly Figure object containing the interactive seasonal plot with subplots for each level 
+            and a dropdown menu for selecting different stations.
 
-Key Operations:
-    1. Creates a subplot for each of the four levels (L1, L2, L3, L4).
-    2. For each station and level, calculates monthly statistics (mean and standard deviation).
-    3. Plots mean values as lines with markers and standard deviations as error bars.
-    4. Configures a dropdown menu to toggle visibility of traces for different stations.
-    5. Sets up the plot layout, including titles, axis labels, and legend positioning.
+    Key Operations:
+        1. Creates a subplot for each of the four levels (L1, L2, L3, L4).
+        2. For each station and level, calculates monthly statistics (mean and standard deviation).
+        3. Plots mean values as lines with markers and standard deviations as error bars.
+        4. Configures a dropdown menu to toggle visibility of traces for different stations.
+        5. Sets up the plot layout, including titles, axis labels, and legend positioning.
 
 
-Note:
-    The function assumes four levels of data for each station. It's designed to handle multiple 
-    stations, allowing for comparative analysis of seasonal patterns across different locations along with the level information.
-'''
+    Note:
+        The function assumes four levels of data for each station. It's designed to handle multiple 
+        stations, allowing for comparative analysis of seasonal patterns across different locations along with the level information.
+    '''
     stations = list(set([key.split('_')[0] for key in data.keys()]))
     
     fig = make_subplots(rows=4, cols=1, subplot_titles=("Level 1", "Level 2", "Level 3", "Level 4"),

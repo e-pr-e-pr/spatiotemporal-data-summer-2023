@@ -658,80 +658,41 @@ As briefly mentioned above, the levels feature of the FLUXNET data is very inter
 Something I want to look at is some patterns between levels and stations, which involes retaining time steps at each station that have data for 4 levels only - not 3, or less. That is what this function is for - to refine the dictionaries to only include the data if it exists in fulll i.e. at all levels. 
 
 ```{python}
-
-def create_timeseries_plot(data, data_type):
+def create_timeseries_plot_single_level(data, data_type):
     '''
-    Description:
-        This function creates an interactive time series plot using Plotly to visualize FLUXNET data 
-        all stations in the input data. It includes a dropdown menu to select different stations, dynamically 
-        updating the plot based on the selection.
-
+    Creates an interactive time series plot for single-level data.
+    
     Parameters:
-        data - A nested dictionary containing the time series data. 
-            For SWC: {station_datatype_level: {'time': [datetime_list], 'data': [float_list]}}
-            For other types: {station: {'time': [datetime_list], 'data': [float_list]}}
-        data_type - A string indicating the type of data being plotted ('swc' for soil water content, 
-                    or another identifier for different data types). Needed for titling the plots (removes a lot of 
-                    complexity to just write the name rather than extract it from dictionary)
-
-    Return:
-        fig - A Plotly Figure object containing the interactive time series plot with a dropdown menu 
-            for selecting different stations.
-
-    Key Operations:
-        1. Extracts unique station names from the data keys.
-        2. Creates traces for each station and level (for SWC) or just each station (for other data types).
-        3. Configures a dropdown menu to toggle the visibility of traces based on the selected station.
-        4. Sets up the plot layout, including title, axis labels, and dropdown menu positioning.
-        5. Makes the first station's data visible by default.
-
-
-    Note:
-        The function handles two different data structures based on the 'data_type' parameter, making it 
-        versatile for different types of FLUXNET data visualization.
+        data - A nested dictionary: {station_datatype_level: {'time': [datetime_list], 'data': [float_list]}}
+        data_type - A string indicating the type of data being plotted
+    
+    Returns:
+        fig - A Plotly Figure object
     '''
-    # Extract unique stations from the keys
-    if data_type == 'swc':
-        stations = list(set([key.split('_')[0] for key in data.keys()]))
-    else:
-        stations = list(data.keys())
+    # Extract unique stations
+    stations = list(set([key.split('_')[0] for key in data.keys()]))
     
     # Create the figure
     fig = go.Figure()
 
     # Create traces for each station (initially hidden)
     for station in stations:
-        if data_type == 'swc':
-            for level in ['l1', 'l2', 'l3', 'l4']:
-                key = f"{station}_{data_type}_{level}"
-                if key in data:
-                    fig.add_trace(go.Scatter(
-                        x=data[key]['time'],
-                        y=data[key]['data'],
-                        mode='lines',
-                        name=f'{level}',
-                        visible=False
-                    ))
-        else:
-            fig.add_trace(go.Scatter(
-                x=data[station]['time'],
-                y=data[station]['data'],
-                mode='lines',
-                name=station,
-                visible=False
-            ))
+        # Find the first key that matches this station
+        station_key = next(key for key in data.keys() if key.startswith(station))
+        
+        fig.add_trace(go.Scatter(
+            x=data[station_key]['time'],
+            y=data[station_key]['data'],
+            mode='lines',
+            name=station,
+            visible=False
+        ))
 
     # Create and add dropdown menu
     dropdown_buttons = []
     for i, station in enumerate(stations):
         visible = [False] * len(fig.data)
-        if data_type == 'swc':
-            start_idx = i * 4
-            for j in range(4):  # 4 levels per station
-                if start_idx + j < len(fig.data):
-                    visible[start_idx + j] = True
-        else:
-            visible[i] = True
+        visible[i] = True
         
         dropdown_buttons.append(dict(
             label=station,
@@ -760,11 +721,76 @@ def create_timeseries_plot(data, data_type):
     )
 
     # Make the first station visible by default
-    if data_type == 'swc':
-        for i in range(min(4, len(fig.data))):
-            fig.data[i].visible = True
-    else:
+    if len(fig.data) > 0:
         fig.data[0].visible = True
+
+    return fig
+```
+
+```{python}
+def create_timeseries_plot_multilevel(data):
+    '''
+    Creates an interactive time series plot for SWC data with multiple levels.
+    
+    Parameters:
+        data - A nested dictionary: {station_swc_level: {'time': [datetime_list], 'data': [float_list]}}
+    
+    Returns:
+        fig - A Plotly Figure object
+    '''
+    stations = list(set([key.split('_')[0] for key in data.keys()]))
+    
+    fig = go.Figure()
+
+    for station in stations:
+        for level in ['l1', 'l2', 'l3', 'l4']:
+            key = f"{station}_swc_{level}"
+            if key in data:
+                fig.add_trace(go.Scatter(
+                    x=data[key]['time'],
+                    y=data[key]['data'],
+                    mode='lines',
+                    name=f'{level}',
+                    visible=False
+                ))
+
+    dropdown_buttons = []
+    for i, station in enumerate(stations):
+        visible = [False] * len(fig.data)
+        start_idx = i * 4
+        for j in range(4):
+            if start_idx + j < len(fig.data):
+                visible[start_idx + j] = True
+        
+        dropdown_buttons.append(dict(
+            label=station,
+            method='update',
+            args=[{'visible': visible},
+                  {'title': f'SWC Time Series for Station {station}'}]
+        ))
+
+    fig.update_layout(
+        updatemenus=[dict(
+            active=0,
+            buttons=dropdown_buttons,
+            direction="down",
+            pad={"r": 10, "t": 10},
+            showactive=True,
+            x=0.1,
+            xanchor="left",
+            y=1.15,
+            yanchor="top"
+        )],
+        height=600,
+        title_text="Select a Station to view SWC Time Series",
+        title_x=0.5,
+        xaxis_title="Time",
+        yaxis_title="SWC"
+    )
+
+    # Make the first station visible by default
+    for i in range(min(4, len(fig.data))):
+        fig.data[i].visible = True
 
     return fig
 ```
@@ -1359,14 +1385,14 @@ CHANGE BLUE TO HOT PINK IN THIS PLOT TIMESERIES
 ```{python}
 #| eval: true
 #| echo: false
-create_timeseries_plot(swc_filtered, 'swc')
+create_timeseries_plot_multilevel(swc_filtered)
 ```
 And here is the RECO time series: 
 
 ```{python}
 #| eval: true
 #| echo: false
-create_timeseries_plot(reco_swc_filtered, 'reco')
+create_timeseries_plot_single_level(reco_swc_filtered, 'RECO')
 ```
 
 I recommend looking at DE-HoH for a nice example of a a clean plot with the 4 levels well represented. 
@@ -1383,10 +1409,13 @@ the Soil water Content at station FI-Sii shows really strong differences between
 
 BE-Maa (Belgium) SWC time series plot shows alsoa very clear pattern, but upon closer inspection, in a really odd way. Level 2 data at this station has pretty much consistently the lowest SWC value. I dont have an idea yet as to why this could be. This could be very well further investigated with land cover analysis, and soil structure analysis. The general pattern between the levels is very similar. Seasonality is also apparent - one can see the winter peaks and summer lows. It could also be said that the summer of 2020, just before July, was probably much wetter than normal. Climatological data is necessary to confirm this statement.
 
-Finally, FR-LBr 
+Finally, FR-LBr is interesting to look at simply because it has the opposite structure of FI-Sii - level 1 consistently has the highest SWC, and level 4 the lowest. 
 
 FR-Hes is an example of a long time series with very clear seasonality. 
 
+Viewing these plots and noticing these differences and similarities is very instructive to design the next phase of the project. The fact there is not one singular pattern of the order of the levels (in terms of highest and lowest SWC) suggests much more needs to be done to understand and predict the patterns. Incorporating climataological variables such as precipitation and temperature, as well s land cover analysis and soil strucuture analysis, could offer more insight into this. 
+
+Finally, I was interested to look at the monthly seasonal variation of these variables, since some of the time series plots were too messy to really grasp. The monthly mean of the data combined with the standard deviation. This helps identify recurring patterns.  Combined with other data (climatoloigcal, land cover analysis etc), this can reveal how ceertain factors consiistently influence the data during specific times of the year. Additionally, by understanding the seasonal variation, it becomes easier to predict future values more accurately, which is crucial for forecasting, and udnerstanding the changing climate. The standard deviation provides a measure of the variability of the data points around the mean. This helps in understanding the extent of fluctuations during different months and identifying periods of high or low variation.
 
 ```{python}
 create_seasonal_plot_multi_level(swc_filtered, 'swc')
@@ -1397,6 +1426,10 @@ create_seasonal_plot_single_level(reco_swc_filtered, 'reco')
 
 ```
 
+
+As mentioned before (with the plots of locations of available stations), almost all the stations are in Europe. There is one in South America, CHEKC IF I ACTUALLY MENTIONED IT BEFORE
+
+DISCUSS THESE PLOTS MORE
 
 smth like we observe a general trend of the data in northern europe being ..... however, there is an outlier in ... which is interesting. this difference could be accounted for by considering .... More data and research is needed to confirm this. 
 

@@ -31,7 +31,6 @@ def process_data_files(directory):
         data_dict - A dictionary of the file contents
     '''
 
-
     data_dict = {}
     for file in os.listdir(directory):
         file_path = os.path.join(directory, file)
@@ -522,79 +521,41 @@ def create_world_correlation_map(df, metrics, levels, data_type): # for now, ave
     
     return fig
 
-def create_timeseries_plot(data, data_type):
+def create_timeseries_plot_single_level(data, data_type):
     '''
-    Description:
-        This function creates an interactive time series plot using Plotly to visualize FLUXNET data 
-        all stations in the input data. It includes a dropdown menu to select different stations, dynamically 
-        updating the plot based on the selection.
-
+    Creates an interactive time series plot for single-level data.
+    
     Parameters:
-        data - A nested dictionary containing the time series data. 
-            For SWC: {station_datatype_level: {'time': [datetime_list], 'data': [float_list]}}
-            For other types: {station: {'time': [datetime_list], 'data': [float_list]}}
-        data_type - A string indicating the type of data being plotted ('swc' for soil water content, 
-                    or another identifier for different data types). Needed for titling the plots (removes a lot of 
-                    complexity to just write the name rather than extract it from dictionary)
-
-    Return:
-        fig - A Plotly Figure object containing the interactive time series plot with a dropdown menu 
-            for selecting different stations.
-
-    Key Operations:
-        1. Extracts unique station names from the data keys.
-        2. Creates traces for each station and level (for SWC) or just each station (for other data types).
-        3. Configures a dropdown menu to toggle the visibility of traces based on the selected station.
-        4. Sets up the plot layout, including title, axis labels, and dropdown menu positioning.
-        5. Makes the first station's data visible by default.
-
-
-    Note:
-        The function handles two different data structures based on the 'data_type' parameter, making it 
-        versatile for different types of FLUXNET data visualization.
+        data - A nested dictionary: {station_datatype_level: {'time': [datetime_list], 'data': [float_list]}}
+        data_type - A string indicating the type of data being plotted
+    
+    Returns:
+        fig - A Plotly Figure object
     '''
-    # Extract unique stations from the keys
-    if data_type == 'swc':
-        stations = list(set([key.split('_')[0] for key in data.keys()]))
-    else:
-        stations = list(data.keys())
+    # Extract unique stations
+    stations = list(set([key.split('_')[0] for key in data.keys()]))
     
     # Create the figure
     fig = go.Figure()
 
     # Create traces for each station (initially hidden)
     for station in stations:
-        if data_type == 'swc':
-            for level in ['l1', 'l2', 'l3', 'l4']:
-                key = f"{station}_{data_type}_{level}"
-                if key in data:
-                    fig.add_trace(go.Scatter(
-                        x=data[key]['time'],
-                        y=data[key]['data'],
-                        mode='lines',
-                        name=f'{level}',
-                        visible=False
-                    ))
-        else:
-            fig.add_trace(go.Scatter(
-                x=data[station]['time'],
-                y=data[station]['data'],
-                mode='lines',
-                name=station,
-                visible=False
-            ))
+        # Find the first key that matches this station
+        station_key = next(key for key in data.keys() if key.startswith(station))
+        
+        fig.add_trace(go.Scatter(
+            x=data[station_key]['time'],
+            y=data[station_key]['data'],
+            mode='lines',
+            name=station,
+            visible=False
+        ))
 
     # Create and add dropdown menu
     dropdown_buttons = []
     for i, station in enumerate(stations):
         visible = [False] * len(fig.data)
-        if data_type == 'swc':
-            start_idx = i * 4
-            for j in range(4):  # 4 levels per station
-                if start_idx + j < len(fig.data):
-                    visible[start_idx + j] = True
-        else:
-            visible[i] = True
+        visible[i] = True
         
         dropdown_buttons.append(dict(
             label=station,
@@ -623,14 +584,76 @@ def create_timeseries_plot(data, data_type):
     )
 
     # Make the first station visible by default
-    if data_type == 'swc':
-        for i in range(min(4, len(fig.data))):
-            fig.data[i].visible = True
-    else:
+    if len(fig.data) > 0:
         fig.data[0].visible = True
 
     return fig
 
+def create_timeseries_plot_multilevel(data):
+    '''
+    Creates an interactive time series plot for SWC data with multiple levels.
+    
+    Parameters:
+        data - A nested dictionary: {station_swc_level: {'time': [datetime_list], 'data': [float_list]}}
+    
+    Returns:
+        fig - A Plotly Figure object
+    '''
+    stations = list(set([key.split('_')[0] for key in data.keys()]))
+    
+    fig = go.Figure()
+
+    for station in stations:
+        for level in ['l1', 'l2', 'l3', 'l4']:
+            key = f"{station}_swc_{level}"
+            if key in data:
+                fig.add_trace(go.Scatter(
+                    x=data[key]['time'],
+                    y=data[key]['data'],
+                    mode='lines',
+                    name=f'{level}',
+                    visible=False
+                ))
+
+    dropdown_buttons = []
+    for i, station in enumerate(stations):
+        visible = [False] * len(fig.data)
+        start_idx = i * 4
+        for j in range(4):
+            if start_idx + j < len(fig.data):
+                visible[start_idx + j] = True
+        
+        dropdown_buttons.append(dict(
+            label=station,
+            method='update',
+            args=[{'visible': visible},
+                  {'title': f'SWC Time Series for Station {station}'}]
+        ))
+
+    fig.update_layout(
+        updatemenus=[dict(
+            active=0,
+            buttons=dropdown_buttons,
+            direction="down",
+            pad={"r": 10, "t": 10},
+            showactive=True,
+            x=0.1,
+            xanchor="left",
+            y=1.15,
+            yanchor="top"
+        )],
+        height=600,
+        title_text="Select a Station to view SWC Time Series",
+        title_x=0.5,
+        xaxis_title="Time",
+        yaxis_title="SWC"
+    )
+
+    # Make the first station visible by default
+    for i in range(min(4, len(fig.data))):
+        fig.data[i].visible = True
+
+    return fig
 
 def create_seasonal_plot_multi_level(data, data_type):
 

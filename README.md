@@ -3,7 +3,7 @@
 My submission for the Spatiotemporal Data class, summer 2024. 
 ## Introduction
 
-This project analyses Soil Water Content (SWC) and Ecosystem Respiration (RECO) data from the [FLUXNET](https://fluxnet.org/) network. FLUXNET is a global network of micrometeorological tower sites that measure the exchanges of carbon dioxide, water vapor, and energy between terrestrial ecosystems and the atmosphere.
+This project analyses Soil Water Content (SWC) and Ecosystem Respiration (RECO) data from the [FLUXNET](https://fluxnet.org/) network. FLUXNET is a global network of micrometeorological tower sites that measure the exchanges of carbon dioxide, water vapour, and energy between terrestrial ecosystems and the atmosphere.
 
 SWC is a key component of the hydrological cycle, influencing water availability for plants and soil processes. RECO represents the total respiration from an ecosystem, including plants, animals, and microorganisms. By examining these variables together, we aim to gain insights into how water availability influences carbon fluxes and overall ecosystem functioning.
 

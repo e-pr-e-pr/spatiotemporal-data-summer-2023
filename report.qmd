@@ -952,11 +952,14 @@ def create_seasonal_plot_multi_level(data, data_type):
 
     fig.update_xaxes(
         title_text="Month", 
-    yaxis_title=f"{data_type.upper()} (gC m-2 day-1)",
         row=4, col=1, 
         tickmode='array', 
         tickvals=list(range(1, 13)),
         ticktext=month_names
+    )
+    fig.update_yaxes(
+        title_text=f"{data_type.upper()} (gC m-2 day-1)",
+        row=4, col=1
     )
     for i in range(1, 5):
         fig.update_yaxes(title_text=f"SWC - Level {i}", row=i, col=1)

@@ -5,7 +5,8 @@ subtitle: "Matriculation Number: 3749872"
 format:
   html:
     code-fold: true
-    theme: cosmo
+    theme: 
+      - cosmo
 jupyter: python3
 execute:
   echo: true

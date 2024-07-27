@@ -47,12 +47,18 @@ I downloaded the data via this website with point-and-click; I did not use a dow
 
 
 This is the steps/things I did to download the data:
-* Navigate to https://fluxnet.org/data/download-data/
-* Select the FLUXNET-CH4 Community pProduct - FLUXNET-CH4 CC-BY-4.0 Data
-* Select all the sites, and fill in the intended use section of the page
-* Download all files - consider using a plugin like DownThemAll (FireFox, Chrome) to download all the files at once.
-* Unzip all the folders and put them where you want (consider using 7zip or similar to do them all at once)
-* Run the following code to process the hourly data into daily data
+
+- Navigate to https://fluxnet.org/data/download-data/
+
+- Select the FLUXNET-CH4 Community Product - FLUXNET-CH4 CC-BY-4.0 Data
+
+- Select all the sites, and fill in the intended use section of the page
+
+- Download all files - consider using a plugin like DownThemAll (FireFox, Chrome) to download all the files at once.
+
+-Unzip all the folders and put them where you want (consider using 7zip or similar to do them all at once)
+
+- Run the following code to process the hourly data into daily data
 
 ```{python}
 

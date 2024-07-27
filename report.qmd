@@ -24,7 +24,9 @@ import os
 My main research question here is: what does the relationship between soil water content (SWC - volumetric, expressed in %) and ecosystem respiration (RECO - gC m-2 day-1) look like? Is there any linearity there? And what happens to this relationship and depth into the soil increases? This analysis focuses on Soil Water Content (SWC) and Ecosystem Respiration (RECO) data from FLUXNET. FLUXNET is a global network of micrometeorological measurement sites. FLUXNET uses eddy covariance techniques to measure the exchanges of carbon dioxide, water vapor, and energy between terrestrial ecosystems and the atmosphere. They provide high-frequency measurements of various environmental parameters, allowing for study of carbon, water, and energy fluxes.
 
 In this study, I concentrate on two key variables:
+
 - Soil Water Content (SWC): Measured at four depths (0.02m, 0.05m, 0.1m, 0.3m), SWC is vital for understanding water availability in the soil profile. It influences plant growth, soil microbial activity, and overall ecosystem functioning.
+
 - Ecosystem Respiration (RECO): This represents the total carbon dioxide release from an ecosystem, including soil(microbial), plant, and animal respiration. While my primary interest is in soil respiration, RECO serves as a proxy due to data availability constraints.
 
 What makes this dataset in particular interesting is that it contains levels in the SWC dataset. The SWC is measured at 4 different depths in the soil. While I didnt get too much time to look at this in this project, a goal is to look at the behaviour of SWC at 4 levels, and look for example for cross correlation in that data.  In this project, I did look at the regression metrics between RECO and SWC at different soil depths and across various stations to understand their spatial and vertical relationships. Additionally, I examine seasonal variations to capture temporal dynamics.
@@ -41,14 +43,14 @@ This analysis aims to explore the relationship between SWC and RECO across vario
 
 
 ## Data sources and availability
-All the data used in this analysis is from FLUXNET - here is the link straight to the data download page: https://fluxnet.org/data/download-data/. The data is free to download, but a user account must be made before the data can be downloaded. 
+All the data used in this analysis is from FLUXNET - here is the link straight to the data download page: [FLUXNET data download](https://fluxnet.org/data/download-data/) . The data is free to download, but a user account must be made before the data can be downloaded. 
 
 I downloaded the data via this website with point-and-click; I did not use a download script. Since the data is stored in .csv format, it is pretty light, and point-and-click worked just fine and took only about 20 minutes. :) I did some data processing to it - taking the averages. The code for that is also found below. I checked the daily data from FLUXNET, and this is different from the daily average - it just takes one data point and calls it a day. I wanted the daily average, hence this process. For RECO, I used the RECO_DT variable. For SWC, the variables are called SWC_1, SWC_2, SWC_3, and SWC_4. 
 
 
 This is the steps/things I did to download the data:
 
-- Navigate to https://fluxnet.org/data/download-data/
+- Navigate to [FLUXNET data download](https://fluxnet.org/data/download-data/) 
 
 - Select the FLUXNET-CH4 Community Product - FLUXNET-CH4 CC-BY-4.0 Data
 
@@ -56,7 +58,7 @@ This is the steps/things I did to download the data:
 
 - Download all files - consider using a plugin like DownThemAll (FireFox, Chrome) to download all the files at once.
 
--Unzip all the folders and put them where you want (consider using 7zip or similar to do them all at once)
+- Unzip all the folders and put them where you want (consider using 7zip or similar to do them all at once)
 
 - Run the following code to process the hourly data into daily data
 
@@ -109,9 +111,9 @@ def process_csv_file(file_path, column_to_analyse, output_dir):
 ```
 Now you should have folders with individual stations and levels as .txt files. This is also the data you will find here in this repo, under /data/RECO/ or /data/SWC/.
 
-https://fluxnet.org/data/aboutdata/data-variables/ and https://fluxnet.org/data/fluxnet2015-dataset/fullset-data-product/  These pages provides an overview of the data variables found in the data. 
+[FLUXNET data variables](https://fluxnet.org/data/aboutdata/data-variables/) and [FLUXNET data product information])https://fluxnet.org/data/fluxnet2015-dataset/fullset-data-product/)  These pages provides an overview of the data variables found in the data. 
 
-For the station location coordinate data, I got this also from FLUXNET. They didnt have it available to download, but they did have it as a table on the following page: https://fluxnet.org/sites/site-list-and-pages/ . I simply copy and pasted this table into a .csv file to use here in my analysis. 
+For the station location coordinate data, I got this also from FLUXNET. They didnt have it available to download, but they did have it as a table on the following page: [FLUXNET station locations](https://fluxnet.org/sites/site-list-and-pages/). I simply copy and pasted this table into a .csv file to use here in my analysis. 
 
 
 ## Setting up the functions to run the analysis
@@ -568,7 +570,7 @@ def metrics_to_csv(metrics_dict, name1, name2):
 
     print(f'Successfully saved to {file_path}')
 ```
-The following function plots the results of the above metric claculation visually, on an interactive world map. It uses Plotly, which is an awesome module but pretty complicated. I cant explain everything for it here; I refer the interested reader to the official Plotly website for more information on everything used here! https://plotly.com/python/getting-started/#overview . Also useful are the following : https://www.geeksforgeeks.org/python-plotly-tutorial/
+The following function plots the results of the above metric claculation visually, on an interactive world map. It uses Plotly, which is an awesome module but pretty complicated. I cant explain everything for it here; I refer the interested reader to the official Plotly website for more information on everything used here! [Plotly official page](https://plotly.com/python/getting-started/#overview). Also useful are the following : [Plotly tutorial](https://www.geeksforgeeks.org/python-plotly-tutorial/)
 
 ```{python}
 def create_world_correlation_map(df, metrics, levels, data_type): # for now, ave to manually type in the variable for the title. want to imrove this to be dynamic later.

@@ -43,7 +43,7 @@ This analysis aims to explore the relationship between SWC and RECO across vario
 ## Data sources and availability
 All the data used in this analysis is from FLUXNET - here is the link straight to the data download page: https://fluxnet.org/data/download-data/. The data is free to download, but a user account must be made before the data can be downloaded. 
 
-I downloaded the data via this website with point-and-click; I did not use a download script. Since the data is stored in .csv format, it is pretty light, and point-and-click worked just fine and took only about 20 minutes. :) I did some data processing to it - taking the averages. The code for that is also found below. I checked the daily data from FLUXNET, and this is different from the daily average - it just takes one data point and calls it a day. I wanted the daily average, hence this process.
+I downloaded the data via this website with point-and-click; I did not use a download script. Since the data is stored in .csv format, it is pretty light, and point-and-click worked just fine and took only about 20 minutes. :) I did some data processing to it - taking the averages. The code for that is also found below. I checked the daily data from FLUXNET, and this is different from the daily average - it just takes one data point and calls it a day. I wanted the daily average, hence this process. For RECO, I used the RECO_DT variable. For SWC, the variables are called SWC_1, SWC_2, SWC_3, and SWC_4. 
 
 
 This is the steps/things I did to download the data:
@@ -62,41 +62,44 @@ def process_csv_file(file_path, column_to_analyse, output_dir):
     
     Parameters:
         file_path (str): Path to the input CSV file.
-        column_to_analyse (str): The column for which to calculate daily averages. i.e. SWC_1, SWC_2 ...
+        column_to_analyse (str): The column for which to calculate daily averages. i.e. SWC_1, SWC_2, or SWC
         output_dir (str): Directory to save the output text file.
     """
-    #extract the station name and level from the file name
+    #extract the station name
     file_name = os.path.basename(file_path)
     parts = file_name.split('_')
     station_name = parts[1]
-    column_base = column_to_analyse.split('_')[0].lower()
-    level = column_to_analyse.split('_')[1]
+    
+    #handle the column naming
+    column_parts = column_to_analyse.split('_')
+    column_base = column_parts[0].lower()
+    
+    #check if there's level number after the underscore
+    if len(column_parts) > 1 and column_parts[1].isdigit():
+        level = column_parts[1]
+        output_file = f"{station_name}_{column_base}_l{level}_daily_avg.txt"
+    else:
+        output_file = f"{station_name}_{column_base}_daily_avg.txt"
     
     df = pd.read_csv(file_path, parse_dates=['TIMESTAMP_START'], date_parser=lambda x: pd.to_datetime(x, format='%Y%m%d%H%M'))
     
-    # replace -9999 with NaN!!
     df = df.replace(-9999, np.nan)
     
-    # set the date as the index
     df['DATE'] = df['TIMESTAMP_START'].dt.date
     df.set_index('DATE', inplace=True)
     
-    # calculate daily averages and count observations
+    #calculate daily averages and count nobs
     daily_stats = df.groupby(df.index)[column_to_analyse].agg(['mean', 'count'])
     
-    # create the output file name
-    output_file = f"{station_name}_{column_base}_l{level}_daily_avg.txt"
     output_path = os.path.join(output_dir, output_file)
     
-    # write results to the output file
     with open(output_path, 'w') as f:
         f.write(f"Daily averages and observation counts for {column_to_analyse}\n")
-        f.write("time	,value	,nobs	\n") # nobs = number of observations
+        f.write("time,value,nobs\n")  # nobs = number of observations
         for date, row in daily_stats.iterrows():
             f.write(f"{date},{row['mean']:.4f},{row['count']}\n")
     
     print(f"Results have been written to {output_path}")
-
 ```
 Now you should have folders with individual stations and levels as .txt files. This is also the data you will find here in this repo, under /data/RECO/ or /data/SWC/.
 
